@@ -1,0 +1,7 @@
+node_modules
+.claude
+.specstory
+cache
+lib
+.env.local
+
