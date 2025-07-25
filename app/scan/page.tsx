@@ -106,7 +106,6 @@ export default function ScanPage() {
                 onScan={handleScan}
                 onError={(error) => console.error(error)}
                 components={{
-                  audio: false,
                   finder: true,
                 }}
                 styles={{
