@@ -2,6 +2,7 @@ node_modules
 .claude
 .specstory
 cache
-lib
 .env.local
+.next
+.env.local.example
 
