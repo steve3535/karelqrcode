@@ -2,80 +2,281 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --primary: #8B5A3C; /* Warm brown */
-  --secondary: #D4A574; /* Gold */
-  --accent: #F8F4E6; /* Cream */
-  --text-dark: #3D2914;
-  --text-light: #6B4423;
-  --background: #FFFDF7;
-  --border: #E8DCC4;
+  /* Elegant Wedding Color Palette */
+  --primary-rose: #E8B4B8; /* Soft rose */
+  --primary-gold: #D4AF37; /* Elegant gold */
+  --primary-cream: #FDF8F3; /* Warm cream */
+  --primary-sage: #9CAF88; /* Sage green */
+  --primary-navy: #2C3E50; /* Deep navy */
+  
+  /* Accent Colors */
+  --accent-peach: #F4C2A1;
+  --accent-lavender: #E6E6FA;
+  --accent-mint: #B8E6B8;
+  
+  /* Text Colors */
+  --text-primary: #2C3E50;
+  --text-secondary: #5D6D7E;
+  --text-light: #85929E;
+  
+  /* Background Colors */
+  --bg-primary: #FDF8F3;
+  --bg-secondary: #FAF5F0;
+  --bg-accent: #FFF9F4;
+  
+  /* Border Colors */
+  --border-light: #F0E6D9;
+  --border-medium: #E8DCC4;
+  --border-dark: #D4C4A8;
+  
+  /* Shadow Colors */
+  --shadow-light: rgba(212, 175, 55, 0.1);
+  --shadow-medium: rgba(212, 175, 55, 0.15);
+  --shadow-dark: rgba(44, 62, 80, 0.1);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  font-family: 'Montserrat', sans-serif;
-  background-color: var(--background);
-  color: var(--text-dark);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4, h5, h6 {
   font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
+/* Elegant Card Design */
 @layer components {
-  .wedding-card {
-    @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden;
-    background: linear-gradient(135deg, #FFFFFF 0%, #FDFCF8 100%);
+  .elegant-card {
+    @apply bg-white rounded-2xl shadow-xl border border-white/20 overflow-hidden;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(253, 248, 243, 0.95) 100%);
+    backdrop-filter: blur(10px);
+    box-shadow: 
+      0 20px 40px rgba(212, 175, 55, 0.1),
+      0 8px 16px rgba(44, 62, 80, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
-  .wedding-button {
-    @apply px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105;
+  .elegant-card-hover {
+    @apply transition-all duration-300 ease-out;
+    transform: translateY(-2px);
+    box-shadow: 
+      0 25px 50px rgba(212, 175, 55, 0.15),
+      0 12px 24px rgba(44, 62, 80, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
-  .wedding-input {
-    @apply w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 transition-all duration-200;
-    border-color: var(--border);
-    background-color: #FDFCF8;
+  .elegant-button {
+    @apply px-8 py-4 rounded-xl font-semibold transition-all duration-300 ease-out transform;
+    background: linear-gradient(135deg, var(--primary-gold) 0%, #C19B2E 100%);
+    color: white;
+    box-shadow: 
+      0 4px 12px rgba(212, 175, 55, 0.3),
+      0 2px 4px rgba(44, 62, 80, 0.1);
   }
 
-  .wedding-input:focus {
-    border-color: var(--secondary);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.1);
+  .elegant-button:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 
+      0 8px 20px rgba(212, 175, 55, 0.4),
+      0 4px 8px rgba(44, 62, 80, 0.15);
   }
 
-  .gold-gradient {
-    background: linear-gradient(135deg, #D4A574 0%, #B8935F 100%);
+  .elegant-button:active {
+    transform: translateY(0) scale(0.98);
   }
 
+  .elegant-button-secondary {
+    @apply px-8 py-4 rounded-xl font-semibold transition-all duration-300 ease-out transform;
+    background: linear-gradient(135deg, var(--primary-sage) 0%, #8BA678 100%);
+    color: white;
+    box-shadow: 
+      0 4px 12px rgba(156, 175, 136, 0.3),
+      0 2px 4px rgba(44, 62, 80, 0.1);
+  }
+
+  .elegant-button-secondary:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 
+      0 8px 20px rgba(156, 175, 136, 0.4),
+      0 4px 8px rgba(44, 62, 80, 0.15);
+  }
+
+  .elegant-input {
+    @apply w-full px-6 py-4 rounded-xl border-2 transition-all duration-300 ease-out;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 248, 243, 0.9) 100%);
+    border-color: var(--border-light);
+    color: var(--text-primary);
+    font-size: 16px;
+  }
+
+  .elegant-input:focus {
+    @apply outline-none;
+    border-color: var(--primary-gold);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(253, 248, 243, 1) 100%);
+    box-shadow: 
+      0 0 0 4px rgba(212, 175, 55, 0.1),
+      0 4px 12px rgba(212, 175, 55, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .elegant-input::placeholder {
+    color: var(--text-light);
+  }
+
+  .elegant-select {
+    @apply w-full px-6 py-4 rounded-xl border-2 transition-all duration-300 ease-out appearance-none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 248, 243, 0.9) 100%);
+    border-color: var(--border-light);
+    color: var(--text-primary);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 48px;
+  }
+
+  .elegant-select:focus {
+    @apply outline-none;
+    border-color: var(--primary-gold);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(253, 248, 243, 1) 100%);
+    box-shadow: 
+      0 0 0 4px rgba(212, 175, 55, 0.1),
+      0 4px 12px rgba(212, 175, 55, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .elegant-textarea {
+    @apply w-full px-6 py-4 rounded-xl border-2 transition-all duration-300 ease-out resize-none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 248, 243, 0.9) 100%);
+    border-color: var(--border-light);
+    color: var(--text-primary);
+    font-size: 16px;
+    min-height: 120px;
+  }
+
+  .elegant-textarea:focus {
+    @apply outline-none;
+    border-color: var(--primary-gold);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(253, 248, 243, 1) 100%);
+    box-shadow: 
+      0 0 0 4px rgba(212, 175, 55, 0.1),
+      0 4px 12px rgba(212, 175, 55, 0.1);
+    transform: translateY(-1px);
+  }
+
+  /* Decorative Elements */
+  .decorative-divider {
+    @apply flex items-center justify-center gap-4 my-8;
+  }
+
+  .decorative-divider::before,
+  .decorative-divider::after {
+    content: '';
+    @apply h-px flex-1;
+    background: linear-gradient(90deg, transparent, var(--primary-gold), transparent);
+  }
+
+  .decorative-icon {
+    @apply w-6 h-6 text-center;
+    color: var(--primary-gold);
+  }
+
+  /* Status Badges */
+  .status-badge {
+    @apply px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200;
+  }
+
+  .status-confirmed {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  }
+
+  .status-declined {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  }
+
+  .status-pending {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  }
+
+  .status-checked-in {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  /* QR Scanner Frame */
   .scanner-frame {
-    position: relative;
-    border: 3px solid var(--secondary);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    @apply relative rounded-2xl overflow-hidden;
+    border: 3px solid var(--primary-gold);
+    box-shadow: 
+      0 20px 40px rgba(212, 175, 55, 0.2),
+      0 8px 16px rgba(44, 62, 80, 0.1);
   }
 
   .scanner-frame::before {
     content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, var(--secondary), var(--primary));
+    @apply absolute inset-0 rounded-2xl;
+    background: linear-gradient(45deg, var(--primary-gold), var(--primary-rose));
     z-index: -1;
-    border-radius: 20px;
+    margin: -3px;
+  }
+
+  /* Loading Spinner */
+  .elegant-spinner {
+    @apply w-6 h-6 border-2 border-transparent rounded-full animate-spin;
+    border-top-color: var(--primary-gold);
+    border-right-color: var(--primary-gold);
+  }
+
+  /* Success/Error States */
+  .success-state {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+  }
+
+  .error-state {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: white;
+  }
+
+  /* Responsive Typography */
+  .responsive-heading {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
+  }
+
+  .responsive-subheading {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  .responsive-body {
+    @apply text-sm sm:text-base md:text-lg;
   }
 }
 
 /* Animations */
-@keyframes fadeIn {
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -83,47 +284,135 @@ h1, h2, h3 {
   }
 }
 
-@keyframes pulse {
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes pulse-gentle {
   0%, 100% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.05);
+    transform: scale(1.02);
   }
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
   }
-  to {
-    transform: translateX(0);
+  50% {
+    transform: translateY(-10px);
   }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.6s ease-out;
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
 }
 
-.animate-pulse-subtle {
-  animation: pulse 2s ease-in-out infinite;
+.animate-fadeInScale {
+  animation: fadeInScale 0.5s ease-out;
 }
 
-/* Responsive adjustments */
+.animate-pulse-gentle {
+  animation: pulse-gentle 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background-size: 200px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Glassmorphism Effects */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(44, 62, 80, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(44, 62, 80, 0.2);
+}
+
+/* Responsive Design */
 @media (max-width: 640px) {
-  .wedding-card {
-    @apply rounded-lg shadow-md;
+  .elegant-card {
+    @apply rounded-xl shadow-lg;
   }
   
-  .wedding-button {
-    @apply px-4 py-2.5 text-sm;
+  .elegant-button {
+    @apply px-6 py-3 text-sm;
   }
   
-  h1 {
-    @apply text-2xl;
+  .elegant-input,
+  .elegant-select,
+  .elegant-textarea {
+    @apply px-4 py-3 text-sm;
   }
   
-  h2 {
-    @apply text-xl;
+  .responsive-heading {
+    @apply text-xl sm:text-2xl;
   }
+  
+  .responsive-subheading {
+    @apply text-base sm:text-lg;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .elegant-button,
+  button {
+    display: none !important;
+  }
+  
+  .elegant-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+  
+  body {
+    background: white !important;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-gold), var(--primary-rose));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #C19B2E, #D4A5A9);
 }
