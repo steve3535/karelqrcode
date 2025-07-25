@@ -1,3 +1,129 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap');
+
+:root {
+  --primary: #8B5A3C; /* Warm brown */
+  --secondary: #D4A574; /* Gold */
+  --accent: #F8F4E6; /* Cream */
+  --text-dark: #3D2914;
+  --text-light: #6B4423;
+  --background: #FFFDF7;
+  --border: #E8DCC4;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--background);
+  color: var(--text-dark);
+}
+
+h1, h2, h3 {
+  font-family: 'Playfair Display', serif;
+}
+
+@layer components {
+  .wedding-card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FDFCF8 100%);
+  }
+
+  .wedding-button {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105;
+  }
+
+  .wedding-input {
+    @apply w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 transition-all duration-200;
+    border-color: var(--border);
+    background-color: #FDFCF8;
+  }
+
+  .wedding-input:focus {
+    border-color: var(--secondary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.1);
+  }
+
+  .gold-gradient {
+    background: linear-gradient(135deg, #D4A574 0%, #B8935F 100%);
+  }
+
+  .scanner-frame {
+    position: relative;
+    border: 3px solid var(--secondary);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .scanner-frame::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
+    z-index: -1;
+    border-radius: 20px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .wedding-card {
+    @apply rounded-lg shadow-md;
+  }
+  
+  .wedding-button {
+    @apply px-4 py-2.5 text-sm;
+  }
+  
+  h1 {
+    @apply text-2xl;
+  }
+  
+  h2 {
+    @apply text-xl;
+  }
+}

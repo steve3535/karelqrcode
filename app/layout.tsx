@@ -2,8 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Wedding Seating - RSVP & Check-in',
-  description: 'RSVP and find your seat at our wedding',
+  title: 'Notre Mariage - RSVP',
+  description: 'Confirmez votre présence et découvrez votre place pour notre mariage',
 }
 
 export default function RootLayout({
@@ -12,8 +12,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-gray-50">{children}</body>
+    <html lang="fr">
+      <body className="min-h-screen">
+        <div className="min-h-screen relative">
+          <div className="fixed inset-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 opacity-50" />
+          <div className="relative z-10">
+            {children}
+          </div>
+        </div>
+      </body>
     </html>
   )
 }
