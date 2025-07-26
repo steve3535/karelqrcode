@@ -181,172 +181,157 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* Elegant Header */}
-        <div className="text-center mb-12 animate-fadeInUp">
-          <div className="mb-8">
-            <div className="decorative-divider">
-              <div className="decorative-icon">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                </svg>
-              </div>
-            </div>
-            <h1 className="responsive-heading font-bold text-gray-800 mb-4">
-              Tableau de Bord Admin
-            </h1>
-            <p className="responsive-body text-gray-600 mb-6">
-              Gestion des invités et des places
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <div className="h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent w-32"></div>
-              <span className="text-2xl">💍</span>
-              <div className="h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent w-32"></div>
-            </div>
+        {/* Wedding Guest Manager Header */}
+        <div className="bg-gradient-to-r from-pink-400 to-pink-500 text-white p-8 text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+            </svg>
+            <h1 className="text-3xl font-bold">Wedding Guest Manager</h1>
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
           </div>
+          <p className="text-lg opacity-90">Elegant RSVP & check-in management for your special day</p>
         </div>
         
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-          <div className="elegant-card p-6 text-center transform hover:scale-105 transition-all duration-300 animate-fadeInUp">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl">👥</span>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">Total Invités</p>
-            <p className="text-3xl font-bold text-gray-800">{stats.total}</p>
-          </div>
-          <div className="elegant-card p-6 text-center transform hover:scale-105 transition-all duration-300 animate-fadeInUp" style={{animationDelay: '0.1s'}}>
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl">✅</span>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">Confirmés</p>
-            <p className="text-3xl font-bold text-green-600">{stats.confirmed}</p>
-          </div>
-          <div className="elegant-card p-6 text-center transform hover:scale-105 transition-all duration-300 animate-fadeInUp" style={{animationDelay: '0.2s'}}>
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl">❌</span>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">Déclinés</p>
-            <p className="text-3xl font-bold text-red-600">{stats.declined}</p>
-          </div>
-          <div className="elegant-card p-6 text-center transform hover:scale-105 transition-all duration-300 animate-fadeInUp" style={{animationDelay: '0.3s'}}>
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl">⏳</span>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">En attente</p>
-            <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
-          </div>
-          <div className="elegant-card p-6 text-center transform hover:scale-105 transition-all duration-300 animate-fadeInUp" style={{animationDelay: '0.4s'}}>
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl">📍</span>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">Présents</p>
-            <p className="text-3xl font-bold text-purple-600">{stats.checkedIn}</p>
-          </div>
-        </div>
-
-        {/* Add Guest Form */}
-        <div className="elegant-card p-8 mb-12 animate-fadeInUp" style={{animationDelay: '0.5s'}}>
-          <h2 className="responsive-subheading font-bold mb-8 text-gray-800">
-            Ajouter un Nouvel Invité
-          </h2>
-          <form onSubmit={addGuest} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <input
-              type="text"
-              placeholder="Nom complet"
-              value={newGuest.name}
-              onChange={(e) => setNewGuest({...newGuest, name: e.target.value})}
-              className="elegant-input"
-              required
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={newGuest.email}
-              onChange={(e) => setNewGuest({...newGuest, email: e.target.value})}
-              className="elegant-input"
-              required
-            />
-            <input
-              type="tel"
-              placeholder="Téléphone (optionnel)"
-              value={newGuest.phone}
-              onChange={(e) => setNewGuest({...newGuest, phone: e.target.value})}
-              className="elegant-input"
-            />
-            <input
-              type="text"
-              placeholder="Code d'invitation"
-              value={newGuest.invitation_code}
-              onChange={(e) => setNewGuest({...newGuest, invitation_code: e.target.value})}
-              className="elegant-input"
-              required
-            />
-            <button
-              type="submit"
-              className="elegant-button font-semibold"
-            >
-              Ajouter l'invité
-            </button>
-          </form>
-        </div>
-
-        {/* Filter Section */}
-        <div className="mb-8 flex flex-wrap gap-3 justify-center">
-          <button
-            onClick={() => setFilter('all')}
-            className={`elegant-button text-sm ${filter === 'all' ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-          >
-            Tous ({stats.total})
-          </button>
-          <button
-            onClick={() => setFilter('confirmed')}
-            className={`elegant-button text-sm ${filter === 'confirmed' ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
-          >
-            Confirmés ({stats.confirmed})
-          </button>
-          <button
-            onClick={() => setFilter('declined')}
-            className={`elegant-button text-sm ${filter === 'declined' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
-          >
-            Déclinés ({stats.declined})
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`elegant-button text-sm ${filter === 'pending' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}
-          >
-            En attente ({stats.pending})
-          </button>
-          <button
-            onClick={() => setFilter('checkedIn')}
-            className={`elegant-button text-sm ${filter === 'checkedIn' ? 'bg-gradient-to-r from-purple-500 to-purple-600' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
-          >
-            Présents ({stats.checkedIn})
-          </button>
-        </div>
-
-        {/* Guests List */}
-        <div className="elegant-card animate-fadeInUp" style={{animationDelay: '0.6s'}}>
-          <div className="p-8 border-b border-gray-100">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <h2 className="responsive-subheading font-bold text-gray-800">
-                Liste des Invités
-              </h2>
-              <div className="relative w-full md:w-80">
-                <input
-                  type="text"
-                  placeholder="Rechercher un invité..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="elegant-input pl-12 text-sm"
-                />
-                <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 animate-fadeInUp">
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-700">Total Guests</h3>
+              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
               </div>
             </div>
+            <div className="text-3xl font-bold text-gray-800 mb-2">{stats.total}</div>
           </div>
+
+          <div className="bg-pink-500 rounded-lg shadow-md p-6 text-center text-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Confirmed</h3>
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              </div>
+            </div>
+            <div className="text-3xl font-bold mb-2">{stats.confirmed}</div>
+            <p className="text-sm opacity-90">{stats.total > 0 ? Math.round((stats.confirmed / stats.total) * 100) : 0}% response rate</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-700">Pending</h3>
+              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-800 mb-2">{stats.pending}</div>
+          </div>
+
+          <div className="bg-yellow-400 rounded-lg shadow-md p-6 text-center text-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Checked In</h3>
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              </div>
+            </div>
+            <div className="text-3xl font-bold mb-2">{stats.checkedIn}</div>
+            <p className="text-sm opacity-90">{stats.confirmed > 0 ? Math.round((stats.checkedIn / stats.confirmed) * 100) : 0}% attendance</p>
+          </div>
+        </div>
+
+        {/* Guest Management Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mx-6 mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Guest Management</h2>
+          
+          {/* Control Bar */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+            <div className="relative w-full md:w-80">
+              <input
+                type="text"
+                placeholder="Search guests..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+              <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <select 
+                value={filter} 
+                onChange={(e) => setFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              >
+                <option value="all">All Guests</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="pending">Pending</option>
+                <option value="declined">Declined</option>
+                <option value="checkedIn">Checked In</option>
+              </select>
+              
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Guest
+              </button>
+            </div>
+          </div>
+
+          {/* Add Guest Form */}
+          {showMobileMenu && (
+            <div className="bg-gray-50 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New Guest</h3>
+              <form onSubmit={addGuest} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={newGuest.name}
+                  onChange={(e) => setNewGuest({...newGuest, name: e.target.value})}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={newGuest.email}
+                  onChange={(e) => setNewGuest({...newGuest, email: e.target.value})}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Invitation Code"
+                  value={newGuest.invitation_code}
+                  onChange={(e) => setNewGuest({...newGuest, invitation_code: e.target.value})}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors"
+                >
+                  Add Guest
+                </button>
+              </form>
+            </div>
+          )}
           
           {/* Mobile View */}
           <div className="block md:hidden">
@@ -374,57 +359,73 @@ export default function AdminPage() {
                   <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
-                  <p className="text-lg">Aucun invité trouvé</p>
+                  <p className="text-lg">No guests found</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredGuests.map((guest) => (
-                  <div key={guest.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-800 mb-2">
-                          {guest.name}
+                    <div key={guest.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-gray-800 mb-1">
+                            {guest.name}
+                          </h3>
                           {guest.plus_ones > 0 && (
-                            <span className="ml-2 px-2 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
-                              +{guest.plus_ones}
-                            </span>
+                            <p className="text-sm text-gray-600 mb-2">+ {guest.plus_ones > 1 ? `${guest.plus_ones} guests` : '1 guest'}</p>
                           )}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-1">{guest.email}</p>
-                        <p className="text-xs font-mono text-amber-700">Code: {guest.invitation_code}</p>
+                        </div>
+                        <button
+                          onClick={() => deleteGuest(guest.id)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors"
+                        >
+                          Delete
+                        </button>
                       </div>
-                      <button
-                        onClick={() => deleteGuest(guest.id)}
-                        className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors"
-                      >
-                        Supprimer
-                      </button>
+                      
+                      <div className="space-y-2 mb-4">
+                        <p className="text-sm text-gray-600">{guest.email}</p>
+                        {guest.phone && (
+                          <p className="text-sm text-gray-600">{guest.phone}</p>
+                        )}
+                        <p className="text-xs font-mono text-gray-500">Code: {guest.invitation_code}</p>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          guest.rsvp_status === 'confirmed' ? 'bg-pink-100 text-pink-700' : 
+                          guest.rsvp_status === 'declined' ? 'bg-red-100 text-red-700' : 
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {guest.rsvp_status === 'confirmed' ? '✓ confirmed' :
+                           guest.rsvp_status === 'declined' ? 'declined' : 'pending'}
+                        </span>
+                        {guest.seating_assignments && guest.seating_assignments[0]?.checked_in && (
+                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+                            ✓ Checked In
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="text-sm text-gray-600 mb-4">
+                        {guest.seating_assignments && guest.seating_assignments[0] ? (
+                          <p>Table: {guest.seating_assignments[0].tables.table_number}</p>
+                        ) : (
+                          <p className="text-gray-400">No table assigned</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button className="bg-pink-500 text-white px-3 py-1 rounded text-sm hover:bg-pink-600 transition-colors">
+                          Edit
+                        </button>
+                        <button className="bg-pink-500 text-white px-3 py-1 rounded text-sm hover:bg-pink-600 transition-colors">
+                          QR Code
+                        </button>
+                        <button className="bg-yellow-400 text-white px-3 py-1 rounded text-sm hover:bg-yellow-500 transition-colors">
+                          Check
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span className={`status-badge ${
-                        guest.rsvp_status === 'confirmed' ? 'status-confirmed' : 
-                        guest.rsvp_status === 'declined' ? 'status-declined' : 
-                        'status-pending'
-                      }`}>
-                        {guest.rsvp_status === 'confirmed' ? 'Confirmé' :
-                         guest.rsvp_status === 'declined' ? 'Décliné' : 'En attente'}
-                      </span>
-                      {guest.seating_assignments && guest.seating_assignments[0] ? (
-                        <span className="status-badge status-checked-in">
-                          Table {guest.seating_assignments[0].tables.table_number}, Place {guest.seating_assignments[0].seat_number}
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
-                          Non assigné
-                        </span>
-                      )}
-                      {guest.seating_assignments && guest.seating_assignments[0]?.checked_in && (
-                        <span className="status-badge status-confirmed">
-                          ✓ Présent
-                        </span>
-                      )}
-                    </div>
-                  </div>
                   ))}
                 </div>
               )
