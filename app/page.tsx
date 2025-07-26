@@ -318,14 +318,14 @@ export default function Home() {
                   disabled={loading}
                   className="flex-1 bg-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Processing...' : 'Yes, I'll be there!'}
+                  {loading ? 'Processing...' : 'Yes, I\'ll be there!'}
                 </button>
                 <button
                   onClick={declineInvitation}
                   disabled={loading}
                   className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Processing...' : 'Can't make it'}
+                  {loading ? 'Processing...' : 'Can\'t make it'}
                 </button>
               </div>
             </div>
