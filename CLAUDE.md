@@ -4,8 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js-based wedding guest management system with QR code functionality for RSVPs and check-ins. The system uses Supabase for the backend and is designed to handle 250 guests on free tier hosting.
-
+This is a Next.js-based 
 ## Development Commands
 
 ```bash

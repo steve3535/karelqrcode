@@ -1,9 +1,14 @@
-import './globals.css'
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import Navigation from '@/components/navigation'
+import Footer from '@/components/footer'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Wedding RSVP System',
-  description: 'Elegant RSVP and check-in management for your special day',
+  title: 'Wedding Guest Manager',
+  description: 'Elegant RSVP & check-in management for your special day',
 }
 
 export default function RootLayout({
@@ -13,8 +18,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-50">
-        {children}
+      <body className={`${inter.className} min-h-screen flex flex-col`}>
+        <Navigation />
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   )

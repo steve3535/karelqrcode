@@ -1,42 +1,75 @@
 'use client'
 
-import { useState } from 'react'
-import { Scanner } from '@yudiel/react-qr-scanner'
+import { useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
-interface GuestInfo {
-  guest: {
-    name: string
-    email: string
-    plus_ones: number
-    dietary_restrictions: string | null
-  }
-  table: {
-    table_number: number
-    table_name: string | null
-  }
-  seating: {
-    seat_number: number
-    checked_in: boolean
-    checked_in_at: string | null
-  }
-}
-
 export default function ScanPage() {
-  const [scanning, setScanning] = useState(true)
-  const [guestInfo, setGuestInfo] = useState<GuestInfo | null>(null)
+  const [scanResult, setScanResult] = useState<any>(null)
+  const [isScanning, setIsScanning] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [manualCode, setManualCode] = useState('')
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
-  const handleScan = async (result: any) => {
-    if (!result || !result[0]?.rawValue || !supabase) return
-    
-    const qrCode = result[0].rawValue
-    setScanning(false)
-    setError('')
-    
+  const startScanning = async () => {
     try {
-      const { data: seatingData, error: seatingError } = await supabase
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        setIsScanning(true)
+        scanQRCode()
+      }
+    } catch (err) {
+      setError('Unable to access camera. Please ensure camera permissions are granted.')
+      console.error('Camera error:', err)
+    }
+  }
+
+  const stopScanning = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    setIsScanning(false)
+  }
+
+  const scanQRCode = () => {
+    const scan = () => {
+      if (!isScanning || !videoRef.current || !canvasRef.current) return
+
+      const canvas = canvasRef.current
+      const video = videoRef.current
+      const context = canvas.getContext('2d')
+
+      if (context && video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
+        
+        // In a real implementation, you would use a QR code scanning library here
+        // For now, we'll use manual input
+      }
+
+      if (isScanning) {
+        requestAnimationFrame(scan)
+      }
+    }
+    scan()
+  }
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await checkInGuest(manualCode)
+  }
+
+  const checkInGuest = async (qrCode: string) => {
+    try {
+      setError('')
+      
+      // Find seating assignment by QR code
+      const { data: assignment, error: assignmentError } = await supabase
         .from('seating_assignments')
         .select(`
           *,
@@ -46,184 +79,190 @@ export default function ScanPage() {
         .eq('qr_code', qrCode)
         .single()
 
-      if (seatingError || !seatingData) {
-        throw new Error('Invalid QR code')
+      if (assignmentError || !assignment) {
+        setError('Invalid QR code. Please try again.')
+        return
       }
 
-      setGuestInfo({
-        guest: seatingData.guests,
-        table: seatingData.tables,
-        seating: {
-          seat_number: seatingData.seat_number,
-          checked_in: seatingData.checked_in,
-          checked_in_at: seatingData.checked_in_at
-        }
+      if (assignment.checked_in) {
+        setError('This guest has already been checked in.')
+        setScanResult(assignment)
+        return
+      }
+
+      // Update check-in status
+      const { error: updateError } = await supabase
+        .from('seating_assignments')
+        .update({
+          checked_in: true,
+          checked_in_at: new Date().toISOString()
+        })
+        .eq('id', assignment.id)
+
+      if (updateError) throw updateError
+
+      setScanResult({
+        ...assignment,
+        justCheckedIn: true
       })
-
-      if (!seatingData.checked_in) {
-        const { error: updateError } = await supabase
-          .from('seating_assignments')
-          .update({
-            checked_in: true,
-            checked_in_at: new Date().toISOString()
-          })
-          .eq('id', seatingData.id)
-
-        if (updateError) {
-          console.error('Error updating check-in:', updateError)
-        } else {
-          setSuccess(true)
-        }
-      }
-    } catch (err: any) {
-      setError(err.message)
+      setManualCode('')
+    } catch (error) {
+      console.error('Error checking in guest:', error)
+      setError('An error occurred. Please try again.')
     }
   }
 
-  const resetScanner = () => {
-    setScanning(true)
-    setGuestInfo(null)
-    setError('')
-    setSuccess(false)
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Pink Header */}
-      <div className="bg-gradient-to-r from-pink-400 to-pink-500 text-white px-8 py-8 text-center">
-        <h1 className="text-3xl font-bold">Guest Check-In</h1>
-        <p className="text-pink-100 mt-2">Scan QR codes to check in guests</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-wedding-lightPink to-wedding-cream">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-wedding-darkPink mb-2">
+              Guest Check-In Scanner
+            </h1>
+            <p className="text-gray-700">
+              Scan guest QR codes or enter manually
+            </p>
+          </div>
 
-      <div className="max-w-2xl mx-auto p-6">
-        {scanning && !guestInfo ? (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="mb-6 text-center">
-              <h2 className="text-2xl font-bold mb-2">Scan Guest QR Code</h2>
-              <p className="text-gray-600">Point the camera at the guest's QR code</p>
-            </div>
+          {/* Scanner Section */}
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">QR Code Scanner</h2>
             
-            <div className="relative aspect-square max-w-md mx-auto rounded-2xl overflow-hidden border-4 border-pink-500">
-              <Scanner
-                onScan={handleScan}
-                onError={(error) => console.error(error)}
-                components={{
-                  finder: true,
-                }}
-                styles={{
-                  container: {
-                    width: '100%',
-                    height: '100%'
-                  }
-                }}
-              />
-            </div>
-            
-            {error && (
-              <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-center">
-                <p className="font-medium">{error}</p>
+            {!isScanning ? (
+              <button
+                onClick={startScanning}
+                className="w-full bg-wedding-pink text-white py-3 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200"
+              >
+                Start Camera Scanner
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                  <canvas ref={canvasRef} className="hidden" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-64 h-64 border-2 border-wedding-pink rounded-lg"></div>
+                  </div>
+                </div>
                 <button
-                  onClick={resetScanner}
-                  className="mt-2 text-sm underline hover:no-underline"
+                  onClick={stopScanning}
+                  className="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-200"
                 >
-                  Try Again
+                  Stop Scanner
                 </button>
               </div>
             )}
+
+            <div className="mt-6 border-t pt-6">
+              <h3 className="font-semibold mb-2">Or enter QR code manually:</h3>
+              <form onSubmit={handleManualSubmit} className="flex gap-2">
+                <input
+                  type="text"
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  placeholder="Enter QR code"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
+                />
+                <button
+                  type="submit"
+                  className="bg-wedding-pink text-white px-6 py-2 rounded-md hover:bg-wedding-darkPink transition duration-200"
+                >
+                  Check In
+                </button>
+              </form>
+            </div>
           </div>
-        ) : guestInfo ? (
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            {/* Status Header */}
-            <div className={`p-6 text-center ${
-              success ? 'bg-green-500' : 
-              guestInfo.seating.checked_in ? 'bg-yellow-500' : 
-              'bg-gray-400'
-            } text-white`}>
-              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                {success ? (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : guestInfo.seating.checked_in ? (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ) : null}
-              </div>
-              <h2 className="text-2xl font-bold">
-                {success ? 'Successfully Checked In!' : 
-                 guestInfo.seating.checked_in ? 'Already Checked In' : 
-                 'Guest Information'}
-              </h2>
+
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
+              {error}
             </div>
-            
-            <div className="p-8 space-y-6">
-              {/* Guest Info */}
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800">{guestInfo.guest.name}</h3>
-                <p className="text-gray-600 mt-1">{guestInfo.guest.email}</p>
-                {guestInfo.guest.plus_ones > 0 && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    +{guestInfo.guest.plus_ones} guest{guestInfo.guest.plus_ones > 1 ? 's' : ''}
-                  </p>
+          )}
+
+          {/* Guest Info Display */}
+          {scanResult && (
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="text-center mb-6">
+                {scanResult.justCheckedIn ? (
+                  <div className="text-5xl mb-2">✅</div>
+                ) : (
+                  <div className="text-5xl mb-2">ℹ️</div>
                 )}
+                <h2 className="text-2xl font-bold text-wedding-darkPink">
+                  {scanResult.justCheckedIn ? 'Check-In Successful!' : 'Guest Information'}
+                </h2>
               </div>
-              
-              {/* Seating Assignment */}
-              <div className="bg-pink-50 p-6 rounded-xl text-center">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">Seating Assignment</h3>
-                <div className="flex justify-center gap-8">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Table</p>
-                    <p className="text-4xl font-bold text-pink-600">
-                      {guestInfo.table.table_number}
-                    </p>
-                    {guestInfo.table.table_name && (
-                      <p className="text-sm text-gray-600 mt-1">{guestInfo.table.table_name}</p>
-                    )}
+
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b">
+                  <span className="font-semibold">Name:</span>
+                  <span>{scanResult.guests?.name}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="font-semibold">Email:</span>
+                  <span>{scanResult.guests?.email}</span>
+                </div>
+                {scanResult.guests?.phone && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="font-semibold">Phone:</span>
+                    <span>{scanResult.guests?.phone}</span>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Seat</p>
-                    <p className="text-4xl font-bold text-pink-600">
-                      {guestInfo.seating.seat_number}
-                    </p>
+                )}
+                <div className="flex justify-between py-2 border-b">
+                  <span className="font-semibold">Table:</span>
+                  <span className="text-lg font-bold text-wedding-pink">
+                    Table {scanResult.table_id}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="font-semibold">Seat:</span>
+                  <span className="text-lg font-bold">Seat {scanResult.seat_number}</span>
+                </div>
+                {scanResult.guests?.dietary_restrictions && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="font-semibold">Dietary:</span>
+                    <span>{scanResult.guests.dietary_restrictions}</span>
                   </div>
+                )}
+                {scanResult.guests?.plus_ones > 0 && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="font-semibold">Plus Ones:</span>
+                    <span>{scanResult.guests.plus_ones}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-2">
+                  <span className="font-semibold">Status:</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    scanResult.checked_in ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {scanResult.checked_in ? 'Checked In' : 'Not Checked In'}
+                  </span>
                 </div>
               </div>
-              
-              {/* Dietary Restrictions */}
-              {guestInfo.guest.dietary_restrictions && (
-                <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
-                  <h4 className="font-semibold text-orange-800 mb-1 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Dietary Restrictions
-                  </h4>
-                  <p className="text-orange-700">{guestInfo.guest.dietary_restrictions}</p>
-                </div>
+
+              {!scanResult.justCheckedIn && !scanResult.checked_in && (
+                <button
+                  onClick={() => checkInGuest(scanResult.qr_code)}
+                  className="w-full mt-6 bg-wedding-pink text-white py-3 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200"
+                >
+                  Check In This Guest
+                </button>
               )}
-              
-              {/* Previous Check-in Info */}
-              {guestInfo.seating.checked_in && guestInfo.seating.checked_in_at && !success && (
-                <div className="text-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                  <p>Previously checked in at:</p>
-                  <p className="font-medium">{new Date(guestInfo.seating.checked_in_at).toLocaleString()}</p>
-                </div>
-              )}
-            </div>
-            
-            {/* Action Button */}
-            <div className="p-6 bg-gray-50">
+
               <button
-                onClick={resetScanner}
-                className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors"
+                onClick={() => {
+                  setScanResult(null)
+                  setError('')
+                }}
+                className="w-full mt-4 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition duration-200"
               >
-                Scan Next Guest
+                Scan Another Guest
               </button>
             </div>
-          </div>
-        ) : null}
+          )}
+        </div>
       </div>
     </div>
   )

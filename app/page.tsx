@@ -6,328 +6,194 @@ import QRCode from 'qrcode'
 
 export default function Home() {
   const [invitationCode, setInvitationCode] = useState('')
-  const [guestData, setGuestData] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [guestInfo, setGuestInfo] = useState<any>(null)
   const [qrCodeUrl, setQrCodeUrl] = useState('')
-  const [plusOnes, setPlusOnes] = useState(0)
-  const [dietaryRestrictions, setDietaryRestrictions] = useState('')
-  const [submitted, setSubmitted] = useState(false)
 
-  const findInvitation = async (e: React.FormEvent) => {
+  const handleRSVP = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    if (!supabase) {
-      setError('Configuration error. Please contact support.')
-      setLoading(false)
-      return
-    }
+    setIsLoading(true)
+    setMessage('')
 
     try {
-      const { data, error } = await supabase
+      // Find guest by invitation code
+      const { data: guest, error: guestError } = await supabase
         .from('guests')
         .select('*')
         .eq('invitation_code', invitationCode.toUpperCase())
         .single()
 
-      if (error) throw new Error('Invitation code not found')
-      
-      setGuestData(data)
-      setPlusOnes(data.plus_ones || 0)
-      setDietaryRestrictions(data.dietary_restrictions || '')
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (guestError || !guest) {
+        setMessage('Invalid invitation code. Please check and try again.')
+        setIsLoading(false)
+        return
+      }
 
-  const confirmAttendance = async () => {
-    if (!guestData || !supabase) return
-    
-    setLoading(true)
-    setError('')
+      if (guest.rsvp_status === 'confirmed') {
+        setMessage('You have already confirmed your attendance.')
+        setIsLoading(false)
+        return
+      }
 
-    try {
+      // Update RSVP status
       const { error: updateError } = await supabase
         .from('guests')
-        .update({
+        .update({ 
           rsvp_status: 'confirmed',
-          plus_ones: plusOnes,
-          dietary_restrictions: dietaryRestrictions,
           updated_at: new Date().toISOString()
         })
-        .eq('id', guestData.id)
+        .eq('id', guest.id)
 
       if (updateError) throw updateError
 
-      const qrData = `WEDDING-${guestData.id}-${Date.now()}`
-      
+      // Check if seating assignment exists
       const { data: existingAssignment } = await supabase
         .from('seating_assignments')
         .select('*')
-        .eq('guest_id', guestData.id)
+        .eq('guest_id', guest.id)
         .single()
 
       if (!existingAssignment) {
-        const { data: availableSeats } = await supabase
+        // Find next available seat
+        const { data: assignments } = await supabase
           .from('seating_assignments')
           .select('table_id, seat_number')
           .order('table_id', { ascending: true })
           .order('seat_number', { ascending: true })
 
-        const occupiedSeats = new Set(
-          availableSeats?.map(s => `${s.table_id}-${s.seat_number}`) || []
-        )
-
-        let assigned = false
-        for (let tableId = 1; tableId <= 25; tableId++) {
-          for (let seatNumber = 1; seatNumber <= 10; seatNumber++) {
-            if (!occupiedSeats.has(`${tableId}-${seatNumber}`)) {
-              const { error: assignError } = await supabase
-                .from('seating_assignments')
-                .insert({
-                  guest_id: guestData.id,
-                  table_id: tableId,
-                  seat_number: seatNumber,
-                  qr_code: qrData
-                })
-
-              if (!assignError) {
-                assigned = true
+        // Find next available seat
+        let nextTable = 1
+        let nextSeat = 1
+        
+        if (assignments && assignments.length > 0) {
+          // Find the first available seat
+          for (let table = 1; table <= 25; table++) {
+            for (let seat = 1; seat <= 10; seat++) {
+              const isOccupied = assignments.some(
+                a => a.table_id === table && a.seat_number === seat
+              )
+              if (!isOccupied) {
+                nextTable = table
+                nextSeat = seat
                 break
               }
             }
+            if (nextSeat !== 1) break
           }
-          if (assigned) break
         }
-      } else {
-        await supabase
+
+        // Generate QR code
+        const qrCodeData = `WEDDING-${guest.id}-${Date.now()}`
+        
+        // Create seating assignment
+        const { error: seatError } = await supabase
           .from('seating_assignments')
-          .update({ qr_code: qrData })
-          .eq('guest_id', guestData.id)
+          .insert({
+            guest_id: guest.id,
+            table_id: nextTable,
+            seat_number: nextSeat,
+            qr_code: qrCodeData
+          })
+
+        if (seatError) throw seatError
+
+        // Generate QR code image
+        const qrUrl = await QRCode.toDataURL(qrCodeData)
+        setQrCodeUrl(qrUrl)
+      } else {
+        // Generate QR code image for existing assignment
+        const qrUrl = await QRCode.toDataURL(existingAssignment.qr_code)
+        setQrCodeUrl(qrUrl)
       }
 
-      const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#EC4899',
-          light: '#FFFFFF'
-        }
-      })
-      
-      setQrCodeUrl(qrCodeDataUrl)
-      setSubmitted(true)
-    } catch (err: any) {
-      setError(err.message)
+      setGuestInfo(guest)
+      setShowSuccess(true)
+    } catch (error) {
+      console.error('Error:', error)
+      setMessage('An error occurred. Please try again.')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }
-
-  const declineInvitation = async () => {
-    if (!guestData || !supabase) return
-    
-    setLoading(true)
-    setError('')
-
-    try {
-      const { error: updateError } = await supabase
-        .from('guests')
-        .update({
-          rsvp_status: 'declined',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', guestData.id)
-
-      if (updateError) throw updateError
-      
-      setSubmitted(true)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (submitted && qrCodeUrl) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8">
-          <div className="text-center">
-            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold mb-4 text-gray-800">Thank You!</h2>
-            <p className="text-gray-600 mb-8">Your RSVP has been confirmed. Please save this QR code for entry.</p>
-            
-            <div className="bg-gray-50 p-6 rounded-xl mb-8">
-              <img src={qrCodeUrl} alt="Your QR Code" className="mx-auto" />
-            </div>
-            
-            <div className="space-y-3 text-sm text-gray-600">
-              <p className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                Screenshot this page
-              </p>
-              <p className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Or take a photo
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (submitted && !qrCodeUrl) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
-          <div className="w-20 h-20 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold mb-4">We'll Miss You</h2>
-          <p className="text-gray-600">Thank you for letting us know. We're sorry you can't make it.</p>
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg max-w-lg w-full">
-        {/* Pink Header */}
-        <div className="bg-gradient-to-r from-pink-400 to-pink-500 text-white p-8 rounded-t-2xl text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-            </svg>
-            <h1 className="text-3xl font-bold">Wedding RSVP</h1>
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-            </svg>
+    <div className="min-h-screen bg-gradient-to-b from-wedding-lightPink to-wedding-cream">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-wedding-darkPink mb-4">
+              💕 Wedding RSVP 💕
+            </h1>
+            <p className="text-gray-700">
+              Please enter your invitation code to confirm your attendance
+            </p>
           </div>
-          <p className="text-pink-100">Join us for our special day</p>
-        </div>
-        
-        <div className="p-8">
-          {!guestData ? (
-            <form onSubmit={findInvitation} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+
+          {!showSuccess ? (
+            <form onSubmit={handleRSVP} className="bg-white rounded-lg shadow-lg p-8">
+              <div className="mb-6">
+                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
                   Invitation Code
                 </label>
                 <input
                   type="text"
+                  id="code"
                   value={invitationCode}
                   onChange={(e) => setInvitationCode(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
                   placeholder="Enter your code"
                   required
                 />
-                <p className="mt-2 text-xs text-gray-500">
-                  Find this code on your invitation card
-                </p>
               </div>
-              
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
+
+              {message && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+                  {message}
                 </div>
               )}
-              
+
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
+                disabled={isLoading}
+                className="w-full bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200 disabled:opacity-50"
               >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Searching...
-                  </span>
-                ) : (
-                  'Find My Invitation'
-                )}
+                {isLoading ? 'Processing...' : 'Confirm Attendance'}
               </button>
             </form>
           ) : (
-            <div className="space-y-6">
-              <div className="text-center pb-6 border-b border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Welcome, {guestData.name}!
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <div className="mb-6">
+                <div className="text-6xl mb-4">🎉</div>
+                <h2 className="text-2xl font-bold text-wedding-darkPink mb-2">
+                  Thank You, {guestInfo?.name}!
                 </h2>
-                <p className="text-gray-600 mt-2">Will you be joining us?</p>
+                <p className="text-gray-700 mb-4">
+                  Your attendance has been confirmed. Please save your QR code for check-in.
+                </p>
               </div>
-              
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Number of Guests
-                  </label>
-                  <select
-                    value={plusOnes}
-                    onChange={(e) => setPlusOnes(parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  >
-                    {[0, 1, 2, 3, 4, 5].map(num => (
-                      <option key={num} value={num}>
-                        {num === 0 ? 'Just me' : `Me +${num}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dietary Restrictions
-                  </label>
-                  <textarea
-                    value={dietaryRestrictions}
-                    onChange={(e) => setDietaryRestrictions(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
-                    rows={3}
-                    placeholder="Vegetarian, allergies, etc."
-                  />
-                </div>
-              </div>
-              
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
+
+              {qrCodeUrl && (
+                <div className="mb-6">
+                  <img src={qrCodeUrl} alt="QR Code" className="mx-auto" />
+                  <p className="text-sm text-gray-600 mt-2">
+                    Show this QR code at the venue
+                  </p>
                 </div>
               )}
-              
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={confirmAttendance}
-                  disabled={loading}
-                  className="flex-1 bg-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Processing...' : 'Yes, I\'ll be there!'}
-                </button>
-                <button
-                  onClick={declineInvitation}
-                  disabled={loading}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Processing...' : 'Can\'t make it'}
-                </button>
-              </div>
+
+              <button
+                onClick={() => {
+                  setShowSuccess(false)
+                  setInvitationCode('')
+                  setGuestInfo(null)
+                  setQrCodeUrl('')
+                }}
+                className="bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200"
+              >
+                RSVP for Another Guest
+              </button>
             </div>
           )}
         </div>
