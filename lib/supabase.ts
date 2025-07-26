@@ -9,9 +9,10 @@ export type Tables = {
   guests: {
     id: string
     name: string
-    email: string
+    email?: string
     phone?: string
     invitation_code: string
+    guest_code?: string
     rsvp_status: 'pending' | 'confirmed' | 'declined'
     plus_ones: number
     dietary_restrictions?: string
@@ -34,6 +35,13 @@ export type Tables = {
     qr_code?: string
     checked_in: boolean
     checked_in_at?: string
+    created_at: string
+  }
+  access_codes: {
+    id: number
+    code: string
+    description?: string
+    is_active: boolean
     created_at: string
   }
 }

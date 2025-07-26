@@ -1,63 +1,24 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import dynamic from 'next/dynamic'
+
+// Dynamically import the scanner to avoid SSR issues
+const EnhancedScanner = dynamic(() => import('./enhanced-scanner'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+      <p>Loading scanner...</p>
+    </div>
+  )
+})
 
 export default function ScanPage() {
   const [scanResult, setScanResult] = useState<any>(null)
   const [isScanning, setIsScanning] = useState(false)
   const [error, setError] = useState('')
   const [manualCode, setManualCode] = useState('')
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-
-  const startScanning = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        setIsScanning(true)
-        scanQRCode()
-      }
-    } catch (err) {
-      setError('Unable to access camera. Please ensure camera permissions are granted.')
-      console.error('Camera error:', err)
-    }
-  }
-
-  const stopScanning = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-    setIsScanning(false)
-  }
-
-  const scanQRCode = () => {
-    const scan = () => {
-      if (!isScanning || !videoRef.current || !canvasRef.current) return
-
-      const canvas = canvasRef.current
-      const video = videoRef.current
-      const context = canvas.getContext('2d')
-
-      if (context && video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        context.drawImage(video, 0, 0, canvas.width, canvas.height)
-        
-        // In a real implementation, you would use a QR code scanning library here
-        // For now, we'll use manual input
-      }
-
-      if (isScanning) {
-        requestAnimationFrame(scan)
-      }
-    }
-    scan()
-  }
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,8 +29,10 @@ export default function ScanPage() {
     try {
       setError('')
       
-      // Find seating assignment by QR code
-      const { data: assignment, error: assignmentError } = await supabase
+      let assignment = null
+      
+      // First try to find by full QR code
+      const { data: qrAssignment, error: qrError } = await supabase
         .from('seating_assignments')
         .select(`
           *,
@@ -78,9 +41,47 @@ export default function ScanPage() {
         `)
         .eq('qr_code', qrCode)
         .single()
+      
+      if (qrAssignment) {
+        assignment = qrAssignment
+      } else {
+        // If not found, try to find by guest code
+        const { data: guestData, error: guestError } = await supabase
+          .from('guests')
+          .select(`
+            *,
+            seating_assignments (
+              id,
+              table_id,
+              seat_number,
+              qr_code,
+              checked_in,
+              checked_in_at
+            )
+          `)
+          .eq('guest_code', qrCode.toUpperCase())
+          .single()
+        
+        if (guestData && guestData.seating_assignments?.[0]) {
+          // Get the full assignment data with table info
+          const { data: fullAssignment } = await supabase
+            .from('seating_assignments')
+            .select(`
+              *,
+              guests (*),
+              tables (*)
+            `)
+            .eq('id', guestData.seating_assignments[0].id)
+            .single()
+          
+          if (fullAssignment) {
+            assignment = fullAssignment
+          }
+        }
+      }
 
-      if (assignmentError || !assignment) {
-        setError('Invalid QR code. Please try again.')
+      if (!assignment) {
+        setError('Invalid QR code or guest code. Please try again.')
         return
       }
 
@@ -106,6 +107,7 @@ export default function ScanPage() {
         justCheckedIn: true
       })
       setManualCode('')
+      setIsScanning(false)
     } catch (error) {
       console.error('Error checking in guest:', error)
       setError('An error occurred. Please try again.')
@@ -131,22 +133,25 @@ export default function ScanPage() {
             
             {!isScanning ? (
               <button
-                onClick={startScanning}
+                onClick={() => setIsScanning(true)}
                 className="w-full bg-wedding-pink text-white py-3 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200"
               >
                 Start Camera Scanner
               </button>
             ) : (
               <div className="space-y-4">
-                <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                  <canvas ref={canvasRef} className="hidden" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-64 h-64 border-2 border-wedding-pink rounded-lg"></div>
-                  </div>
-                </div>
+                <EnhancedScanner 
+                  isActive={isScanning}
+                  onScan={(data) => {
+                    console.log('Scanned QR code:', data)
+                    checkInGuest(data)
+                  }}
+                />
+                <p className="text-sm text-gray-600 text-center">
+                  Position the QR code within the frame. The scanner will automatically detect QR codes.
+                </p>
                 <button
-                  onClick={stopScanning}
+                  onClick={() => setIsScanning(false)}
                   className="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-200"
                 >
                   Stop Scanner
@@ -155,14 +160,14 @@ export default function ScanPage() {
             )}
 
             <div className="mt-6 border-t pt-6">
-              <h3 className="font-semibold mb-2">Or enter QR code manually:</h3>
+              <h3 className="font-semibold mb-2">Enter QR code or Guest Code manually:</h3>
               <form onSubmit={handleManualSubmit} className="flex gap-2">
                 <input
                   type="text"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="Enter QR code"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
+                  placeholder="Enter guest code (e.g., CZDVPNNH) or full QR code"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink text-sm"
                 />
                 <button
                   type="submit"
@@ -171,6 +176,9 @@ export default function ScanPage() {
                   Check In
                 </button>
               </form>
+              <p className="text-xs text-gray-600 mt-2">
+                You can enter either the 8-character guest code or the full QR code data
+              </p>
             </div>
           </div>
 
@@ -200,10 +208,12 @@ export default function ScanPage() {
                   <span className="font-semibold">Name:</span>
                   <span>{scanResult.guests?.name}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="font-semibold">Email:</span>
-                  <span>{scanResult.guests?.email}</span>
-                </div>
+                {scanResult.guests?.email && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="font-semibold">Email:</span>
+                    <span>{scanResult.guests?.email}</span>
+                  </div>
+                )}
                 {scanResult.guests?.phone && (
                   <div className="flex justify-between py-2 border-b">
                     <span className="font-semibold">Phone:</span>
@@ -213,7 +223,7 @@ export default function ScanPage() {
                 <div className="flex justify-between py-2 border-b">
                   <span className="font-semibold">Table:</span>
                   <span className="text-lg font-bold text-wedding-pink">
-                    Table {scanResult.table_id}
+                    Table {scanResult.table_id} - {scanResult.tables?.table_name || ''}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
@@ -230,6 +240,12 @@ export default function ScanPage() {
                   <div className="flex justify-between py-2 border-b">
                     <span className="font-semibold">Plus Ones:</span>
                     <span>{scanResult.guests.plus_ones}</span>
+                  </div>
+                )}
+                {scanResult.guests?.guest_code && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="font-semibold">Guest Code:</span>
+                    <span className="font-mono">{scanResult.guests.guest_code}</span>
                   </div>
                 )}
                 <div className="flex justify-between py-2">
