@@ -9,7 +9,14 @@ export default function Home() {
   const [accessCode, setAccessCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [guestInfo, setGuestInfo] = useState({
+  const [guestInfo, setGuestInfo] = useState<{
+    name: string
+    email: string
+    phone: string
+    plus_ones: number
+    dietary_restrictions: string
+    assignedTable?: number | null
+  }>({
     name: '',
     email: '',
     phone: '',
@@ -33,7 +40,7 @@ export default function Home() {
         .single()
 
       if (error || !data) {
-        setMessage('Invalid access code. Please check and try again.')
+        setMessage('Code d\'accès invalide. Veuillez vérifier et réessayer.')
         setIsLoading(false)
         return
       }
@@ -41,7 +48,7 @@ export default function Home() {
       setStep('register')
     } catch (error) {
       console.error('Error:', error)
-      setMessage('An error occurred. Please try again.')
+      setMessage('Une erreur s\'est produite. Veuillez réessayer.')
     } finally {
       setIsLoading(false)
     }
@@ -86,26 +93,55 @@ export default function Home() {
       // Generate QR code data
       const qrCodeData = `WEDDING-${guest.id}-${Date.now()}`
       
-      // Create seating assignment without table (to be assigned by admin)
-      const { error: seatError } = await supabase
-        .from('seating_assignments')
-        .insert({
-          guest_id: guest.id,
-          table_id: 1, // Default to table 1, admin will reassign
-          seat_number: 1, // Default seat, admin will reassign
-          qr_code: qrCodeData
-        })
+      // Find available table for the group
+      const partySize = 1 + (guestInfo.plus_ones || 0)
+      const { data: availableTable } = await supabase
+        .rpc('find_available_table_for_group', { p_party_size: partySize })
+      
+      if (availableTable) {
+        // Assign seats for the entire group
+        const { data: groupAssignment } = await supabase
+          .rpc('assign_group_seats', { 
+            p_guest_id: guest.id, 
+            p_party_size: partySize 
+          })
+        
+        if (!groupAssignment || groupAssignment.length === 0) {
+          // Fallback: create assignment without specific seats
+          const { error: seatError } = await supabase
+            .from('seating_assignments')
+            .insert({
+              guest_id: guest.id,
+              table_id: availableTable,
+              seat_number: null,
+              qr_code: qrCodeData
+            })
 
-      if (seatError) throw seatError
+          if (seatError) throw seatError
+        }
+      } else {
+        // No available table - create assignment without table
+        const { error: seatError } = await supabase
+          .from('seating_assignments')
+          .insert({
+            guest_id: guest.id,
+            table_id: null,
+            seat_number: null,
+            qr_code: qrCodeData
+          })
+
+        if (seatError) throw seatError
+      }
 
       // Generate QR code image
       const qrUrl = await QRCode.toDataURL(qrCodeData)
       setQrCodeUrl(qrUrl)
       setGuestCode(generatedGuestCode)
+      setGuestInfo({...guestInfo, assignedTable: assignedTableNumber})
       setStep('success')
     } catch (error) {
       console.error('Error:', error)
-      setMessage('An error occurred during registration. Please try again.')
+      setMessage('Une erreur s\'est produite lors de l\'inscription. Veuillez réessayer.')
     } finally {
       setIsLoading(false)
     }
@@ -117,18 +153,18 @@ export default function Home() {
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-wedding-darkPink mb-4">
-                💕 Wedding RSVP 💕
+              <h1 className="text-3xl md:text-4xl font-bold text-wedding-darkPink mb-4">
+                💕 RSVP Mariage 💕
               </h1>
-              <p className="text-gray-700">
-                Please enter the access code to continue
+              <p className="text-gray-700 text-sm md:text-base">
+                Veuillez entrer le code d'accès pour continuer
               </p>
             </div>
 
             <form onSubmit={handleAccessCode} className="bg-white rounded-lg shadow-lg p-8">
               <div className="mb-6">
                 <label htmlFor="access" className="block text-sm font-medium text-gray-700 mb-2">
-                  Access Code
+                  Code d'accès
                 </label>
                 <input
                   type="text"
@@ -136,7 +172,7 @@ export default function Home() {
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
-                  placeholder="Enter access code"
+                  placeholder="Entrez le code d'accès"
                   required
                 />
               </div>
@@ -152,7 +188,7 @@ export default function Home() {
                 disabled={isLoading}
                 className="w-full bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200 disabled:opacity-50"
               >
-                {isLoading ? 'Verifying...' : 'Continue'}
+                {isLoading ? 'Vérification...' : 'Continuer'}
               </button>
             </form>
           </div>
@@ -167,11 +203,11 @@ export default function Home() {
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-wedding-darkPink mb-4">
-                Register for the Wedding
+              <h1 className="text-3xl md:text-4xl font-bold text-wedding-darkPink mb-4">
+                Inscription au Mariage
               </h1>
-              <p className="text-gray-700">
-                Please fill in your details to confirm your attendance
+              <p className="text-gray-700 text-sm md:text-base px-4">
+                Veuillez remplir vos informations pour confirmer votre présence
               </p>
             </div>
 
@@ -179,7 +215,7 @@ export default function Home() {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
+                    Nom complet *
                   </label>
                   <input
                     type="text"
@@ -193,7 +229,7 @@ export default function Home() {
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email (Optional)
+                    Email (Optionnel)
                   </label>
                   <input
                     type="email"
@@ -206,7 +242,7 @@ export default function Home() {
 
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone (Optional)
+                    Téléphone (Optionnel)
                   </label>
                   <input
                     type="tel"
@@ -219,7 +255,7 @@ export default function Home() {
 
                 <div>
                   <label htmlFor="plus_ones" className="block text-sm font-medium text-gray-700 mb-2">
-                    Number of Additional Guests
+                    Nombre d'invités supplémentaires
                   </label>
                   <input
                     type="number"
@@ -234,7 +270,7 @@ export default function Home() {
 
                 <div>
                   <label htmlFor="dietary" className="block text-sm font-medium text-gray-700 mb-2">
-                    Dietary Restrictions (Optional)
+                    Restrictions alimentaires (Optionnel)
                   </label>
                   <textarea
                     id="dietary"
@@ -257,7 +293,7 @@ export default function Home() {
                 disabled={isLoading}
                 className="w-full mt-6 bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200 disabled:opacity-50"
               >
-                {isLoading ? 'Registering...' : 'Confirm Attendance'}
+                {isLoading ? 'Inscription...' : 'Confirmer ma présence'}
               </button>
             </form>
           </div>
@@ -273,16 +309,16 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <div className="mb-6">
               <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-2xl font-bold text-wedding-darkPink mb-2">
-                Thank You, {guestInfo.name}!
+              <h2 className="text-xl md:text-2xl font-bold text-wedding-darkPink mb-2">
+                Merci, {guestInfo.name}!
               </h2>
-              <p className="text-gray-700 mb-4">
-                Your attendance has been confirmed. Please save your QR code for check-in.
+              <p className="text-gray-700 mb-4 text-sm md:text-base px-4">
+                Votre présence a été confirmée. Veuillez enregistrer votre code QR pour l'enregistrement.
               </p>
               <div className="bg-wedding-lightPink/20 rounded-lg p-4 mb-4">
-                <p className="text-sm font-medium text-gray-700">Your Guest Code:</p>
-                <p className="text-2xl font-bold text-wedding-darkPink">{guestCode}</p>
-                <p className="text-xs text-gray-600 mt-1">Keep this code for your records</p>
+                <p className="text-sm font-medium text-gray-700">Votre code invité:</p>
+                <p className="text-xl md:text-2xl font-bold text-wedding-darkPink">{guestCode}</p>
+                <p className="text-xs text-gray-600 mt-1">Conservez ce code pour vos dossiers</p>
               </div>
             </div>
 
@@ -290,14 +326,14 @@ export default function Home() {
               <div className="mb-6">
                 <img src={qrCodeUrl} alt="QR Code" className="mx-auto" />
                 <p className="text-sm text-gray-600 mt-2">
-                  Show this QR code at the venue
+                  Présentez ce code QR à l'entrée
                 </p>
                 <a
                   href={qrCodeUrl}
                   download={`wedding-qr-${guestCode}.png`}
                   className="inline-block mt-2 text-wedding-pink hover:text-wedding-darkPink underline"
                 >
-                  Download QR Code
+                  Télécharger le code QR
                 </a>
               </div>
             )}
@@ -317,7 +353,7 @@ export default function Home() {
               }}
               className="bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200"
             >
-              Register Another Guest
+              Inscrire un autre invité
             </button>
           </div>
         </div>

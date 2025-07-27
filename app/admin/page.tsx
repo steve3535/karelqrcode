@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import QRCode from 'qrcode'
+import Link from 'next/link'
 
 type Guest = {
   id: string
@@ -171,7 +172,7 @@ export default function AdminDashboard() {
           .insert({
             guest_id: guest.id,
             table_id: newGuest.table_id,
-            seat_number: newGuest.seat_number || 1,
+            seat_number: newGuest.seat_number || null,
             qr_code: qrCodeData
           })
 
@@ -234,7 +235,7 @@ export default function AdminDashboard() {
           .from('seating_assignments')
           .update({
             table_id: editingGuest.table_number,
-            seat_number: editingGuest.seat_number || 1
+            seat_number: editingGuest.seat_number || null
           })
           .eq('id', editingGuest.seating_assignment_id)
 
@@ -253,7 +254,7 @@ export default function AdminDashboard() {
           .insert({
             guest_id: editingGuest.id,
             table_id: editingGuest.table_number,
-            seat_number: editingGuest.seat_number || 1,
+            seat_number: editingGuest.seat_number || null,
             qr_code: qrCodeData
           })
 
@@ -397,12 +398,20 @@ export default function AdminDashboard() {
           <div className="p-6 border-b border-gray-200">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <h2 className="text-xl font-bold">Guest Management</h2>
-              <button
-                onClick={() => setShowAddGuest(true)}
-                className="bg-wedding-pink text-white px-4 py-2 rounded-md hover:bg-wedding-darkPink transition duration-200 flex items-center gap-2"
-              >
-                + Add Guest
-              </button>
+              <div className="flex gap-2">
+                <Link
+                  href="/admin/tables"
+                  className="bg-wedding-gold text-gray-800 px-4 py-2 rounded-md hover:bg-yellow-500 transition duration-200"
+                >
+                  Manage Tables
+                </Link>
+                <button
+                  onClick={() => setShowAddGuest(true)}
+                  className="bg-wedding-pink text-white px-4 py-2 rounded-md hover:bg-wedding-darkPink transition duration-200 flex items-center gap-2"
+                >
+                  + Add Guest
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-col md:flex-row gap-4">
@@ -443,7 +452,7 @@ export default function AdminDashboard() {
                       {guest.phone && <p className="text-gray-600">{guest.phone}</p>}
                       {guest.table_number && (
                         <p className="text-gray-800 font-medium">
-                          Table: {guest.table_number}, Seat: {guest.seat_number}
+                          Table: {guest.table_number}{guest.seat_number ? `, Seat: ${guest.seat_number}` : ''}
                         </p>
                       )}
                       {guest.dietary_restrictions && (
@@ -563,11 +572,11 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seat</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Seat (Optional)</label>
                     <input
                       type="number"
-                      placeholder="Seat #"
-                      value={newGuest.seat_number}
+                      placeholder="Leave empty for auto"
+                      value={newGuest.seat_number || ''}
                       onChange={(e) => setNewGuest({...newGuest, seat_number: parseInt(e.target.value) || 0})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       min="0"
@@ -686,12 +695,12 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seat</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Seat (Optional)</label>
                     <input
                       type="number"
-                      placeholder="Seat #"
+                      placeholder="Leave empty for auto"
                       value={editingGuest.seat_number || ''}
-                      onChange={(e) => setEditingGuest({...editingGuest, seat_number: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setEditingGuest({...editingGuest, seat_number: e.target.value ? parseInt(e.target.value) : null})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       min="0"
                       max="10"
