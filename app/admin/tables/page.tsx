@@ -10,7 +10,7 @@ type Guest = {
   name: string
   email?: string
   phone?: string
-  plus_ones: number
+  plus_ones?: number
   dietary_restrictions?: string
   seat_number?: number
   seating_assignment_id?: number
@@ -294,7 +294,7 @@ export default function TableManagement() {
             </div>
             {selectedGuest.email && <p className="text-sm text-gray-600">{selectedGuest.email}</p>}
             {selectedGuest.phone && <p className="text-sm text-gray-600">{selectedGuest.phone}</p>}
-            {selectedGuest.plus_ones > 0 && (
+            {selectedGuest.plus_ones && selectedGuest.plus_ones > 0 && (
               <p className="text-sm text-gray-600">+{selectedGuest.plus_ones} guest(s)</p>
             )}
             {selectedGuest.seat_number && (
@@ -438,9 +438,14 @@ function UnseatedGuests({
       const unseated = data
         .filter(item => !item.seat_number)
         .map(item => ({
-          ...item.guests,
+          id: (item.guests as any).id,
+          name: (item.guests as any).name,
+          email: (item.guests as any).email,
+          phone: (item.guests as any).phone,
+          plus_ones: (item.guests as any).plus_ones,
+          dietary_restrictions: (item.guests as any).dietary_restrictions,
           seating_assignment_id: item.id
-        }))
+        })) as Guest[]
       setUnseatedGuests(unseated)
     }
   }
@@ -456,7 +461,7 @@ function UnseatedGuests({
           <div>
             <p className="font-medium">{guest.name}</p>
             {guest.email && <p className="text-sm text-gray-600">{guest.email}</p>}
-            {guest.plus_ones > 0 && (
+            {guest.plus_ones && guest.plus_ones > 0 && (
               <p className="text-sm text-gray-600">+{guest.plus_ones} guest(s)</p>
             )}
           </div>

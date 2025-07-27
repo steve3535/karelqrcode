@@ -172,7 +172,7 @@ export default function AdminDashboard() {
           .insert({
             guest_id: guest.id,
             table_id: newGuest.table_id,
-            seat_number: newGuest.seat_number || null,
+            seat_number: newGuest.seat_number || undefined,
             qr_code: qrCodeData
           })
 
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
           .from('seating_assignments')
           .update({
             table_id: editingGuest.table_number,
-            seat_number: editingGuest.seat_number || null
+            seat_number: editingGuest.seat_number || undefined
           })
           .eq('id', editingGuest.seating_assignment_id)
 
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
           .insert({
             guest_id: editingGuest.id,
             table_id: editingGuest.table_number,
-            seat_number: editingGuest.seat_number || null,
+            seat_number: editingGuest.seat_number || undefined,
             qr_code: qrCodeData
           })
 
@@ -700,7 +700,7 @@ export default function AdminDashboard() {
                       type="number"
                       placeholder="Leave empty for auto"
                       value={editingGuest.seat_number || ''}
-                      onChange={(e) => setEditingGuest({...editingGuest, seat_number: e.target.value ? parseInt(e.target.value) : null})}
+                      onChange={(e) => setEditingGuest({...editingGuest, seat_number: e.target.value ? parseInt(e.target.value) : undefined})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       min="0"
                       max="10"

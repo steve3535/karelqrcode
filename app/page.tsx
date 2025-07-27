@@ -15,7 +15,6 @@ export default function Home() {
     phone: string
     plus_ones: number
     dietary_restrictions: string
-    assignedTable?: number | null
   }>({
     name: '',
     email: '',
@@ -137,7 +136,6 @@ export default function Home() {
       const qrUrl = await QRCode.toDataURL(qrCodeData)
       setQrCodeUrl(qrUrl)
       setGuestCode(generatedGuestCode)
-      setGuestInfo({...guestInfo, assignedTable: assignedTableNumber})
       setStep('success')
     } catch (error) {
       console.error('Error:', error)
