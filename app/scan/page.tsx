@@ -235,13 +235,13 @@ export default function ScanPage() {
                 )}
                 {scanResult.seat_number && (
                   <div className="flex justify-between py-2 border-b">
-                    <span className="font-semibold">Seat:</span>
-                    <span className="text-lg font-bold">Seat {scanResult.seat_number}</span>
+                    <span className="font-semibold">Place:</span>
+                    <span className="text-lg font-bold">Place {scanResult.seat_number}</span>
                   </div>
                 )}
                 {scanResult.guests?.dietary_restrictions && (
                   <div className="flex justify-between py-2 border-b">
-                    <span className="font-semibold">Dietary:</span>
+                    <span className="font-semibold">Diet:</span>
                     <span>{scanResult.guests.dietary_restrictions}</span>
                   </div>
                 )}

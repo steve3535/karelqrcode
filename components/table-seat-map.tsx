@@ -164,11 +164,11 @@ export default function TableSeatMap({
       <div className="mt-4 flex justify-center gap-4 text-xs">
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
-          <span>Available</span>
+          <span>Disponible</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-wedding-lightPink border border-wedding-pink rounded"></div>
-          <span>Occupied</span>
+          <span>Occupée</span>
         </div>
       </div>
 

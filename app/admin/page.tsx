@@ -178,7 +178,7 @@ export default function AdminDashboard() {
 
         if (seatError) {
           if (seatError.message.includes('duplicate key value violates unique constraint')) {
-            setErrorMessage(`Table ${newGuest.table_id}, Seat ${newGuest.seat_number} is already taken. Please choose a different seat.`)
+            setErrorMessage(`Table ${newGuest.table_id}, Place ${newGuest.seat_number} déjà prise. Veuillez choisir une autre place.`)
             // Delete the guest if seating assignment fails
             await supabase.from('guests').delete().eq('id', guest.id)
             return
@@ -241,7 +241,7 @@ export default function AdminDashboard() {
 
         if (seatError) {
           if (seatError.message.includes('duplicate key value violates unique constraint')) {
-            setErrorMessage(`Table ${editingGuest.table_number}, Seat ${editingGuest.seat_number} is already taken.`)
+            setErrorMessage(`Table ${editingGuest.table_number}, Place ${editingGuest.seat_number} déjà prise.`)
             return
           }
         }
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
 
         if (seatError) {
           if (seatError.message.includes('duplicate key value violates unique constraint')) {
-            setErrorMessage(`Table ${editingGuest.table_number}, Seat ${editingGuest.seat_number} is already taken.`)
+            setErrorMessage(`Table ${editingGuest.table_number}, Place ${editingGuest.seat_number} déjà prise.`)
             return
           }
         }
@@ -343,7 +343,6 @@ export default function AdminDashboard() {
       <div className="bg-gradient-to-r from-wedding-pink to-wedding-darkPink text-white p-6">
         <div className="container mx-auto">
           <h1 className="text-3xl font-bold mb-2">💕 Gestion des Invités ✨</h1>
-          <p className="text-white/90">Elegant RSVP & check-in management for your special day</p>
         </div>
       </div>
 
@@ -403,13 +402,13 @@ export default function AdminDashboard() {
                   href="/admin/tables"
                   className="bg-wedding-gold text-gray-800 px-4 py-2 rounded-md hover:bg-yellow-500 transition duration-200"
                 >
-                  Manage Tables
+                  Gestion des tables
                 </Link>
                 <button
                   onClick={() => setShowAddGuest(true)}
                   className="bg-wedding-pink text-white px-4 py-2 rounded-md hover:bg-wedding-darkPink transition duration-200 flex items-center gap-2"
                 >
-                  + Add Guest
+                  + Ajouter un invité
                 </button>
               </div>
             </div>
@@ -427,8 +426,8 @@ export default function AdminDashboard() {
                 onChange={(e) => setFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
               >
-                <option value="all">All Guests</option>
-                <option value="confirmed">Confirmed</option>
+                <option value="all">Tous les invités</option>
+                <option value="confirmed">Confirmé</option>
                 <option value="pending">Pending</option>
                 <option value="checked-in">Checked In</option>
               </select>
@@ -452,11 +451,11 @@ export default function AdminDashboard() {
                       {guest.phone && <p className="text-gray-600">{guest.phone}</p>}
                       {guest.table_number && (
                         <p className="text-gray-800 font-medium">
-                          Table: {guest.table_number}{guest.seat_number ? `, Seat: ${guest.seat_number}` : ''}
+                          Table: {guest.table_number}{guest.seat_number ? `, Place: ${guest.seat_number}` : ''}
                         </p>
                       )}
                       {guest.dietary_restrictions && (
-                        <p className="text-gray-600">Dietary: {guest.dietary_restrictions}</p>
+                        <p className="text-gray-600">Diet: {guest.dietary_restrictions}</p>
                       )}
                     </div>
 
@@ -486,7 +485,7 @@ export default function AdminDashboard() {
                         }}
                         className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition duration-200 text-sm"
                       >
-                        Edit
+                        Editer
                       </button>
                       {guest.qr_code && (
                         <button
@@ -572,7 +571,7 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seat (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Place (Optional)</label>
                     <input
                       type="number"
                       placeholder="Leave empty for auto"
@@ -641,7 +640,7 @@ export default function AdminDashboard() {
       {showEditGuest && editingGuest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">Edit Guest</h3>
+            <h3 className="text-xl font-bold mb-4">Editer</h3>
             <form onSubmit={handleEditGuest}>
               <div className="space-y-4">
                 <input
@@ -695,7 +694,7 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seat (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Place (Optional)</label>
                     <input
                       type="number"
                       placeholder="Leave empty for auto"

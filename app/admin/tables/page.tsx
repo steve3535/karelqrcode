@@ -273,7 +273,7 @@ export default function TableManagement() {
                   }}
                   className="absolute top-2 right-2 text-xs text-gray-500 hover:text-gray-700"
                 >
-                  Edit
+                  Editer
                 </button>
               </div>
             ))}
@@ -451,7 +451,7 @@ function UnseatedGuests({
   }
 
   if (unseatedGuests.length === 0) {
-    return <p className="text-gray-500">All confirmed guests have been assigned seats.</p>
+    return <p className="text-gray-500">Tous les invités confirmés ont été assignés à une place.</p>
   }
 
   return (
