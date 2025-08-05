@@ -225,23 +225,23 @@ export default function TableManagement() {
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Total Tables</p>
+            <p className="text-gray-600 text-sm">Tables</p>
             <p className="text-2xl font-bold">{tables.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Total Capacity</p>
+            <p className="text-gray-600 text-sm">Capacité Totale</p>
             <p className="text-2xl font-bold">
               {tables.reduce((sum, t) => sum + t.capacity, 0)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Seated Guests</p>
+            <p className="text-gray-600 text-sm">Places occupées</p>
             <p className="text-2xl font-bold">
               {tables.reduce((sum, t) => sum + t.guests.filter(g => g.seat_number).length, 0)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Available Seats</p>
+            <p className="text-gray-600 text-sm">Places disponibles</p>
             <p className="text-2xl font-bold">
               {tables.reduce((sum, t) => sum + (t.capacity - t.guests.filter(g => g.seat_number).length), 0)}
             </p>
@@ -250,7 +250,7 @@ export default function TableManagement() {
 
         {/* Table Grid */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Seating Arrangement</h2>
+          <h2 className="text-xl font-bold mb-4">Plan de Table</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {tables.map((table) => (
               <div key={table.id} className="relative">
