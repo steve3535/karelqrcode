@@ -208,14 +208,14 @@ export default function TableManagement() {
         <div className="container mx-auto">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Table Management</h1>
-              <p className="text-white/90">Visual seating arrangement manager</p>
+              <h1 className="text-3xl font-bold mb-2">Plan de Table</h1>
+              <p className="text-white/90">Gestion des places assises</p>
             </div>
             <Link
               href="/admin"
               className="bg-white text-wedding-pink px-4 py-2 rounded-md hover:bg-gray-100 transition duration-200"
             >
-              Back to Admin
+              Admin
             </Link>
           </div>
         </div>

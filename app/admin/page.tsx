@@ -342,7 +342,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-wedding-pink to-wedding-darkPink text-white p-6">
         <div className="container mx-auto">
-          <h1 className="text-3xl font-bold mb-2">💕 Wedding Guest Manager ✨</h1>
+          <h1 className="text-3xl font-bold mb-2">💕 Gestion des Invités ✨</h1>
           <p className="text-white/90">Elegant RSVP & check-in management for your special day</p>
         </div>
       </div>
@@ -353,7 +353,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Total Guests</p>
+                <p className="text-gray-600 text-sm">Total</p>
                 <p className="text-3xl font-bold">{stats.total}</p>
               </div>
               <span className="text-2xl">👥</span>
@@ -386,7 +386,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-gray-700 text-sm">Checked In</p>
                 <p className="text-3xl font-bold">{stats.checkedIn}</p>
-                <p className="text-sm text-gray-600">{stats.confirmed > 0 ? `${Math.round(stats.checkedIn / stats.confirmed * 100)}% attendance` : '0% attendance'}</p>
+                <p className="text-sm text-gray-600">{stats.confirmed > 0 ? `${Math.round(stats.checkedIn / stats.confirmed * 100)}% de présence` : '0% de présence'}</p>
               </div>
               <span className="text-2xl">🎉</span>
             </div>
@@ -397,7 +397,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <h2 className="text-xl font-bold">Guest Management</h2>
+              <h2 className="text-xl font-bold">Gestion Invités</h2>
               <div className="flex gap-2">
                 <Link
                   href="/admin/tables"
@@ -508,7 +508,7 @@ export default function AdminDashboard() {
                         onClick={() => handleDeleteGuest(guest.id)}
                         className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition duration-200 text-sm"
                       >
-                        Delete
+                        Supprimer
                       </button>
                     </div>
                   </div>
@@ -619,7 +619,7 @@ export default function AdminDashboard() {
                   type="submit"
                   className="flex-1 bg-wedding-pink text-white py-2 rounded-md hover:bg-wedding-darkPink transition duration-200"
                 >
-                  Add Guest
+                  Ajouter un invité
                 </button>
                 <button
                   type="button"
@@ -674,8 +674,8 @@ export default function AdminDashboard() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
                     <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="declined">Declined</option>
+                    <option value="confirmed">Confirmé</option>
+                    <option value="declined">Décliné</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
