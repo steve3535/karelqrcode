@@ -120,7 +120,7 @@ export default function ScanPage() {
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-wedding-darkPink mb-2">
-              Scanner d'Entrée Invités
+              Scanner de QR Code Invités
             </h1>
             <p className="text-gray-700 text-sm md:text-base">
               Scannez les codes QR ou entrez manuellement

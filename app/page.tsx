@@ -152,7 +152,7 @@ export default function Home() {
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-wedding-darkPink mb-4">
-                💕 RSVP Mariage 💕
+                💕 RSVP Karel & Malick 💕
               </h1>
               <p className="text-gray-700 text-sm md:text-base">
                 Veuillez entrer le code d'accès pour continuer

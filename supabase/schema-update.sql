@@ -18,4 +18,4 @@ CREATE TABLE access_codes (
 );
 
 -- Insert default access code
-INSERT INTO access_codes (code, description) VALUES ('WEDDING2024', 'Main wedding access code');
+INSERT INTO access_codes (code, description) VALUES ('KRL2025', 'Main wedding access code');

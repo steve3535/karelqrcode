@@ -6,8 +6,8 @@ import Navigation from '@/components/navigation'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Wedding Guest Manager',
-  description: 'Elegant RSVP & check-in management for your special day',
+  title: 'Karel & Malick RSVP',
+  description: '',
 }
 
 export default function RootLayout({
