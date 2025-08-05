@@ -299,8 +299,8 @@ export default function TableManagement() {
             )}
             {selectedGuest.seat_number && (
               <p className="text-sm font-medium mt-2">
-                Currently at Table {tables.find(t => t.guests.some(g => g.id === selectedGuest.id))?.table_number}, 
-                Seat {selectedGuest.seat_number}
+                Actuellement à la Table {tables.find(t => t.guests.some(g => g.id === selectedGuest.id))?.table_number}, 
+                Place {selectedGuest.seat_number}
               </p>
             )}
             <div className="mt-3 space-y-2">
@@ -311,14 +311,14 @@ export default function TableManagement() {
                 }}
                 className="w-full bg-wedding-pink text-white px-3 py-1 rounded text-sm hover:bg-wedding-darkPink"
               >
-                Assign to Different Seat
+                Changer de place
               </button>
               {selectedGuest.seat_number && (
                 <button
                   onClick={() => removeGuestFromSeat(selectedGuest)}
                   className="w-full bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400"
                 >
-                  Remove from Seat
+                  Retirer de la place
                 </button>
               )}
             </div>
@@ -327,7 +327,7 @@ export default function TableManagement() {
 
         {/* Unseated Guests */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Guests Without Seats</h2>
+          <h2 className="text-xl font-bold mb-4">Invités sans place assise</h2>
           <UnseatedGuests 
             tables={tables} 
             onAssign={(guest) => {
@@ -344,7 +344,7 @@ export default function TableManagement() {
       {showEditModal && editingTable && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">Edit Table {editingTable.table_number}</h3>
+            <h3 className="text-xl font-bold mb-4">Editer {editingTable.table_number}</h3>
             <form onSubmit={handleEditTable}>
               <div className="space-y-4">
                 <div>
@@ -469,7 +469,7 @@ function UnseatedGuests({
             onClick={() => onAssign(guest)}
             className="bg-wedding-pink text-white px-3 py-1 rounded text-sm hover:bg-wedding-darkPink"
           >
-            Assign Seat
+            Assigner une place
           </button>
         </div>
       ))}

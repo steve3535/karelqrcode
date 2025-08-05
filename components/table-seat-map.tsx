@@ -117,7 +117,7 @@ export default function TableSeatMap({
         <h3 className="font-bold text-lg">Table {tableNumber}</h3>
         {tableName && <p className="text-sm text-gray-600">{tableName}</p>}
         <p className="text-xs text-gray-500 mt-1">
-          {guests.filter(g => g.seat_number).length}/{capacity} seats occupied
+          {guests.filter(g => g.seat_number).length}/{capacity} place(s) occupée(s)
         </p>
       </div>
       
