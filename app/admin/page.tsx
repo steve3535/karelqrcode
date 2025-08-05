@@ -364,7 +364,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-white/90 text-sm">Confirmed</p>
                 <p className="text-3xl font-bold">{stats.confirmed}</p>
-                <p className="text-sm text-white/80">{stats.confirmed > 0 ? `${Math.round(stats.confirmed / stats.total * 100)}% response rate` : '0% response rate'}</p>
+                <p className="text-sm text-white/80">{stats.confirmed > 0 ? `${Math.round(stats.confirmed / stats.total * 100)}% taux de réponse` : '0% taux de réponse'}</p>
               </div>
               <span className="text-2xl">👤</span>
             </div>
@@ -416,7 +416,7 @@ export default function AdminDashboard() {
             <div className="mt-4 flex flex-col md:flex-row gap-4">
               <input
                 type="text"
-                placeholder="Search by name, email, or guest code..."
+                placeholder="Chercher par nom, email, ou code invité..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
@@ -467,7 +467,7 @@ export default function AdminDashboard() {
                           ? 'bg-red-500 text-white'
                           : 'bg-gray-200 text-gray-700'
                       }`}>
-                        {guest.rsvp_status === 'confirmed' ? '✓ confirmed' : guest.rsvp_status}
+                        {guest.rsvp_status === 'confirmed' ? '✓ confirmé' : guest.rsvp_status}
                       </span>
                       
                       {guest.checked_in && (
