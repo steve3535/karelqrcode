@@ -429,7 +429,7 @@ function SeatingManagement() {
       await loadData()
     } catch (error) {
       console.error('Error removing guest:', error)
-      setMessage(`❌ Erreur lors du retrait: ${error.message}`)
+      setMessage(`❌ Erreur lors du retrait: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
     }
   }
 
