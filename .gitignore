@@ -1,8 +1,76 @@
+# Dependencies
 node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+.env.local
+.env.local.example
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Claude AI
 .claude
 .specstory
+
+# Cache
 cache
-.env.local
-.next
-.env.local.example
+
+# Python virtual environment
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Excel files (contain sensitive guest data)
+*.xlsx
+*.xls
+*.csv
+
+# Images and screenshots (may contain sensitive info)
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# SQL debug scripts (temporaires)
+/supabase/debug-*.sql
+/supabase/check-*.sql
+/supabase/fix-*.sql
+/supabase/recreate-*.sql
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
 

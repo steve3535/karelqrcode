@@ -1,358 +1,248 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import QRCode from 'qrcode'
 
 export default function Home() {
-  const [step, setStep] = useState<'access' | 'register' | 'success'>('access')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [accessCode, setAccessCode] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [guestInfo, setGuestInfo] = useState<{
-    name: string
-    email: string
-    phone: string
-    plus_ones: number
-    dietary_restrictions: string
-  }>({
-    name: '',
-    email: '',
-    phone: '',
-    plus_ones: 0,
-    dietary_restrictions: ''
+  const [error, setError] = useState('')
+  const [stats, setStats] = useState({
+    totalGuests: 0,
+    assignedSeats: 0,
+    availableSeats: 0,
+    checkedIn: 0
   })
-  const [qrCodeUrl, setQrCodeUrl] = useState('')
-  const [guestCode, setGuestCode] = useState('')
 
-  const handleAccessCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setMessage('')
-
-    try {
-      const { data, error } = await supabase
-        .from('access_codes')
-        .select('*')
-        .eq('code', accessCode.toUpperCase())
-        .eq('is_active', true)
-        .single()
-
-      if (error || !data) {
-        setMessage('Code d\'accès invalide. Veuillez vérifier et réessayer.')
-        setIsLoading(false)
-        return
-      }
-
-      setStep('register')
-    } catch (error) {
-      console.error('Error:', error)
-      setMessage('Une erreur s\'est produite. Veuillez réessayer.')
-    } finally {
-      setIsLoading(false)
+  useEffect(() => {
+    // Vérifier si déjà authentifié dans la session
+    const auth = sessionStorage.getItem('wedding_auth')
+    if (auth === 'true') {
+      setIsAuthenticated(true)
     }
-  }
+    // Charger les statistiques
+    loadStats()
+  }, [])
 
-  const generateGuestCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let code = ''
-    for (let i = 0; i < 8; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return code
-  }
-
-  const handleRegistration = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setMessage('')
-
+  const loadStats = async () => {
     try {
-      const generatedGuestCode = generateGuestCode()
-      const invitationCode = `GUEST-${generatedGuestCode}`
-
-      // Create guest record
-      const { data: guest, error: guestError } = await supabase
+      // Compter les invités
+      const { count: guestCount } = await supabase
         .from('guests')
-        .insert({
-          name: guestInfo.name,
-          email: guestInfo.email || null,
-          phone: guestInfo.phone || null,
-          invitation_code: invitationCode,
-          guest_code: generatedGuestCode,
-          plus_ones: guestInfo.plus_ones,
-          dietary_restrictions: guestInfo.dietary_restrictions || null,
-          rsvp_status: 'confirmed'
-        })
-        .select()
-        .single()
+        .select('*', { count: 'exact', head: true })
 
-      if (guestError) throw guestError
+      // Compter les places assignées
+      const { count: assignedCount } = await supabase
+        .from('seat_assignments')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
 
-      // Generate QR code data
-      const qrCodeData = `WEDDING-${guest.id}-${Date.now()}`
+      // Compter les invités présents
+      const { count: checkedInCount } = await supabase
+        .from('guests')
+        .select('*', { count: 'exact', head: true })
+        .eq('checked_in', true)
+
+      // Récupérer la capacité totale RÉELLE depuis la base de données
+      const { data: tables } = await supabase
+        .from('tables')
+        .select('capacity')
+        .lte('table_number', 26)
       
-      // Find available table for the group
-      const partySize = 1 + (guestInfo.plus_ones || 0)
-      const { data: availableTable } = await supabase
-        .rpc('find_available_table_for_group', { p_party_size: partySize })
+      const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 260
       
-      if (availableTable) {
-        // Assign seats for the entire group
-        const { data: groupAssignment } = await supabase
-          .rpc('assign_group_seats', { 
-            p_guest_id: guest.id, 
-            p_party_size: partySize 
-          })
-        
-        if (!groupAssignment || groupAssignment.length === 0) {
-          // Fallback: create assignment without specific seats
-          const { error: seatError } = await supabase
-            .from('seating_assignments')
-            .insert({
-              guest_id: guest.id,
-              table_id: availableTable,
-              seat_number: null,
-              qr_code: qrCodeData
-            })
-
-          if (seatError) throw seatError
-        }
-      } else {
-        // No available table - create assignment without table
-        const { error: seatError } = await supabase
-          .from('seating_assignments')
-          .insert({
-            guest_id: guest.id,
-            table_id: null,
-            seat_number: null,
-            qr_code: qrCodeData
-          })
-
-        if (seatError) throw seatError
-      }
-
-      // Generate QR code image
-      const qrUrl = await QRCode.toDataURL(qrCodeData)
-      setQrCodeUrl(qrUrl)
-      setGuestCode(generatedGuestCode)
-      setStep('success')
+      setStats({
+        totalGuests: guestCount || 0,
+        assignedSeats: assignedCount || 0,
+        availableSeats: totalCapacity - (assignedCount || 0),
+        checkedIn: checkedInCount || 0
+      })
     } catch (error) {
-      console.error('Error:', error)
-      setMessage('Une erreur s\'est produite lors de l\'inscription. Veuillez réessayer.')
-    } finally {
-      setIsLoading(false)
+      console.error('Error loading stats:', error)
     }
   }
 
-  if (step === 'access') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-wedding-lightPink to-wedding-cream">
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-md mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-wedding-darkPink mb-4">
-                💕 RSVP Karel & Malick 💕
-              </h1>
-              <p className="text-gray-700 text-sm md:text-base">
-                Veuillez entrer le code d'accès pour continuer
-              </p>
-            </div>
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (accessCode.toUpperCase() === 'KRL2025') {
+      setIsAuthenticated(true)
+      sessionStorage.setItem('wedding_auth', 'true')
+      setError('')
+    } else {
+      setError('Code incorrect. Veuillez réessayer.')
+    }
+  }
 
-            <form onSubmit={handleAccessCode} className="bg-white rounded-lg shadow-lg p-8">
-              <div className="mb-6">
-                <label htmlFor="access" className="block text-sm font-medium text-gray-700 mb-2">
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                Accès Sécurisé
+              </h1>
+              <p className="text-gray-600">Mariage Karel & Lambert</p>
+            </div>
+            
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
                   Code d'accès
                 </label>
                 <input
-                  type="text"
-                  id="access"
+                  type="password"
+                  id="code"
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Entrez le code d'accès"
                   required
                 />
               </div>
-
-              {message && (
-                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-                  {message}
+              
+              {error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                  {error}
                 </div>
               )}
-
+              
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all"
               >
-                {isLoading ? 'Vérification...' : 'Continuer'}
+                Accéder
               </button>
             </form>
+            
+            <div className="mt-6 text-center text-sm text-gray-500">
+              <p>Accès réservé aux organisateurs</p>
+            </div>
+            
+            {/* Statistiques en temps réel */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="bg-green-50 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-green-600">{stats.availableSeats}</p>
+                  <p className="text-xs text-gray-600">Places libres</p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-purple-600">{stats.assignedSeats}</p>
+                  <p className="text-xs text-gray-600">Places occupées</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     )
   }
 
-  if (step === 'register') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-wedding-lightPink to-wedding-cream">
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-md mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-wedding-darkPink mb-4">
-                Inscription au Mariage
-              </h1>
-              <p className="text-gray-700 text-sm md:text-base px-4">
-                Veuillez remplir vos informations pour confirmer votre présence
-              </p>
-            </div>
-
-            <form onSubmit={handleRegistration} className="bg-white rounded-lg shadow-lg p-8">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom complet *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={guestInfo.name}
-                    onChange={(e) => setGuestInfo({...guestInfo, name: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email (Optionnel)
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={guestInfo.email}
-                    onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone (Optionnel)
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    value={guestInfo.phone}
-                    onChange={(e) => setGuestInfo({...guestInfo, phone: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="plus_ones" className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre d'invités supplémentaires
-                  </label>
-                  <input
-                    type="number"
-                    id="plus_ones"
-                    min="0"
-                    max="5"
-                    value={guestInfo.plus_ones}
-                    onChange={(e) => setGuestInfo({...guestInfo, plus_ones: parseInt(e.target.value) || 0})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="dietary" className="block text-sm font-medium text-gray-700 mb-2">
-                    Restrictions alimentaires (Optionnel)
-                  </label>
-                  <textarea
-                    id="dietary"
-                    value={guestInfo.dietary_restrictions}
-                    onChange={(e) => setGuestInfo({...guestInfo, dietary_restrictions: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-wedding-pink focus:border-wedding-pink"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              {message && (
-                <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
-                  {message}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full mt-6 bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200 disabled:opacity-50"
-              >
-                {isLoading ? 'Inscription...' : 'Confirmer ma présence'}
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    )
+  const handleLogout = () => {
+    sessionStorage.removeItem('wedding_auth')
+    setIsAuthenticated(false)
+    setAccessCode('')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-wedding-lightPink to-wedding-cream">
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-md mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="mb-6">
-              <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-xl md:text-2xl font-bold text-wedding-darkPink mb-2">
-                Merci, {guestInfo.name}!
-              </h2>
-              <p className="text-gray-700 mb-4 text-sm md:text-base px-4">
-                Votre présence a été confirmée. Veuillez enregistrer votre code QR pour l'enregistrement.
-              </p>
-              <div className="bg-wedding-lightPink/20 rounded-lg p-4 mb-4">
-                <p className="text-sm font-medium text-gray-700">Votre code invité:</p>
-                <p className="text-xl md:text-2xl font-bold text-wedding-darkPink">{guestCode}</p>
-                <p className="text-xs text-gray-600 mt-1">Conservez ce code pour vos dossiers</p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
+      {/* Bouton de déconnexion */}
+      <div className="max-w-6xl mx-auto mb-4 flex justify-end">
+        <button
+          onClick={handleLogout}
+          className="bg-white text-gray-600 px-4 py-2 rounded-lg shadow hover:shadow-lg transition-all flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Déconnexion
+        </button>
+      </div>
+      
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+            Système de Gestion des Places
+          </h1>
+          <p className="text-gray-600 text-lg">Mariage Karel & Lambert</p>
+        </div>
+
+        {/* Navigation Cards */}
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Admin Card */}
+          <Link href="/admin/seating" className="group">
+            <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer border-2 border-transparent hover:border-purple-500">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Gestion des Places</h2>
+                <p className="text-gray-600 mb-4">Interface d'administration pour gérer les attributions de places</p>
+                <div className="space-y-2 text-sm text-left w-full">
+                  <div className="flex items-center text-gray-500">
+                  </div>
+                  <div className="flex items-center text-gray-500">
+                  </div>
+                  <div className="flex items-center text-gray-500">
+                  </div>
+                </div>
+                <div className="mt-6 px-6 py-2 bg-purple-100 text-purple-700 rounded-full font-medium group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                  Accéder →
+                </div>
               </div>
             </div>
+          </Link>
 
-            {qrCodeUrl && (
-              <div className="mb-6">
-                <img src={qrCodeUrl} alt="QR Code" className="mx-auto" />
-                <p className="text-sm text-gray-600 mt-2">
-                  Présentez ce code QR à l'entrée
-                </p>
-                <a
-                  href={qrCodeUrl}
-                  download={`wedding-qr-${guestCode}.png`}
-                  className="inline-block mt-2 text-wedding-pink hover:text-wedding-darkPink underline"
-                >
-                  Télécharger le code QR
-                </a>
+          {/* Scanner Card */}
+          <Link href="/scan-v2" className="group">
+            <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer border-2 border-transparent hover:border-pink-500">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 bg-gradient-to-r from-pink-500 to-pink-600 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Scanner QR Code</h2>
+                <p className="text-gray-600 mb-4">Interface pour l'hôtesse d'accueil le jour J</p>
+                <div className="space-y-2 text-sm text-left w-full">
+                  <div className="flex items-center text-gray-500">
+                  </div>
+                  <div className="flex items-center text-gray-500">
+                  </div>
+                  <div className="flex items-center text-gray-500">
+                  </div>
+                </div>
+                <div className="mt-6 px-6 py-2 bg-pink-100 text-pink-700 rounded-full font-medium group-hover:bg-pink-600 group-hover:text-white transition-colors">
+                  Accéder →
+                </div>
               </div>
-            )}
+            </div>
+          </Link>
+        </div>
 
-            <button
-              onClick={() => {
-                setStep('register')
-                setGuestInfo({
-                  name: '',
-                  email: '',
-                  phone: '',
-                  plus_ones: 0,
-                  dietary_restrictions: ''
-                })
-                setQrCodeUrl('')
-                setGuestCode('')
-              }}
-              className="bg-wedding-pink text-white py-2 px-4 rounded-md hover:bg-wedding-darkPink transition duration-200"
-            >
-              Inscrire un autre invité
-            </button>
+        {/* Stats Footer - Données en temps réel */}
+        <div className="mt-12 bg-white rounded-xl shadow-lg p-6">
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-3xl font-bold text-purple-600">{stats.totalGuests}</p>
+              <p className="text-gray-600">Invités</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-pink-600">26</p>
+              <p className="text-gray-600">Tables</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-green-600">{stats.availableSeats}</p>
+              <p className="text-gray-600">Places libres</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-blue-600">{stats.checkedIn}</p>
+              <p className="text-gray-600">Présents</p>
+            </div>
           </div>
         </div>
       </div>
