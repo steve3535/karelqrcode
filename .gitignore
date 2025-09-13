@@ -53,7 +53,7 @@ __pycache__/
 *.csv
 
 # Images and screenshots (may contain sensitive info)
-*.png
+#*.png
 *.jpg
 *.jpeg
 *.gif

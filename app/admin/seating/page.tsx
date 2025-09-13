@@ -6,6 +6,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { TouchBackend } from 'react-dnd-touch-backend'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 // Détection mobile pour le bon backend DnD
 const isTouchDevice = () => {
@@ -285,12 +286,27 @@ function DroppableTable({ table, onDrop, onRemoveGuest }: {
 
 // Composant principal
 function SeatingManagement() {
+  const router = useRouter()
   const [tables, setTables] = useState<Table[]>([])
   const [allGuests, setAllGuests] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'unassigned' | 'assigned' | 'checked_in'>('all')
+
+  // Détecter si on est sur mobile et rediriger
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobile = window.innerWidth <= 768
+      if (isMobile) {
+        router.push('/admin/seating-mobile')
+      }
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [router])
 
   useEffect(() => {
     loadData()

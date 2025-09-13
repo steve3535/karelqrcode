@@ -171,8 +171,18 @@ export default function Home() {
 
         {/* Navigation Cards */}
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Admin Card */}
-          <Link href="/admin/seating" className="group">
+          {/* Admin Card - Détection automatique desktop/mobile */}
+          <Link 
+            href="/admin/seating" 
+            className="group"
+            onClick={(e) => {
+              // Si on est sur mobile, aller directement à la version mobile
+              if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                e.preventDefault()
+                window.location.href = '/admin/seating-mobile'
+              }
+            }}
+          >
             <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer border-2 border-transparent hover:border-purple-500">
               <div className="flex flex-col items-center text-center">
                 <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
