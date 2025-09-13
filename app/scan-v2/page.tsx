@@ -408,34 +408,34 @@ export default function ScannerV2() {
           {showTableDetails && (
             <div className="px-4 pb-4 border-t border-gray-100">
               {tableAvailability.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 mt-3">
+                <div className="space-y-2 mt-3">
                   {tableAvailability.map((table) => (
                     <div 
                       key={table.table_number}
-                      className="flex items-center justify-between p-2 rounded-lg border"
+                      className="flex items-center justify-between p-3 rounded-lg border"
                       style={{ 
                         borderColor: table.color_code,
                         backgroundColor: `${table.color_code}10`
                       }}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1">
                         <span 
-                          className="w-3 h-3 rounded-full"
+                          className="w-4 h-4 rounded-full flex-shrink-0"
                           style={{ backgroundColor: table.color_code }}
                         />
-                        <span className="font-semibold text-sm">
-                          {table.table_number}
-                          {table.is_vip && <span className="ml-1 text-yellow-500">⭐</span>}
+                        <span className="font-medium text-sm flex-1">
+                          {table.table_name || `Table ${table.table_number}`}
+                          {table.is_vip && <span className="ml-2 text-yellow-500">⭐</span>}
                         </span>
-                        {table.table_name && (
-                          <span className="text-xs text-gray-500 truncate max-w-[80px]" title={table.table_name}>
-                            ({table.table_name})
-                          </span>
-                        )}
                       </div>
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">
-                        {table.available_seats}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-green-600">
+                          {table.available_seats}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          place{table.available_seats > 1 ? 's' : ''}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -25,11 +25,18 @@ type Table = {
   color_name: string
 }
 
+type TableWithGuests = Table & {
+  guests: Guest[]
+}
+
 export default function SeatingMobilePage() {
   const [guests, setGuests] = useState<Guest[]>([])
   const [tables, setTables] = useState<Table[]>([])
+  const [tableGuests, setTableGuests] = useState<{[tableId: string]: Guest[]}>({})
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null)
+  const [selectedTable, setSelectedTable] = useState<TableWithGuests | null>(null)
+  const [showTableModal, setShowTableModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true)
@@ -58,8 +65,22 @@ export default function SeatingMobilePage() {
 
       if (tablesError) throw tablesError
 
+      // Charger les invités par table
+      const guestsByTable: {[tableId: string]: Guest[]} = {}
+      if (guestsData) {
+        guestsData.forEach(guest => {
+          if (guest.table_id) {
+            if (!guestsByTable[guest.table_id]) {
+              guestsByTable[guest.table_id] = []
+            }
+            guestsByTable[guest.table_id].push(guest)
+          }
+        })
+      }
+
       setGuests(guestsData || [])
       setTables(tablesData || [])
+      setTableGuests(guestsByTable)
     } catch (error) {
       console.error('Error loading data:', error)
       setMessage('Erreur lors du chargement')
@@ -78,9 +99,20 @@ export default function SeatingMobilePage() {
     setMessage('')
   }
 
+  const handleTableClick = (table: Table) => {
+    // Préparer les données de la table avec ses occupants
+    const tableWithGuests: TableWithGuests = {
+      ...table,
+      guests: tableGuests[table.id] || []
+    }
+    setSelectedTable(tableWithGuests)
+    setShowTableModal(true)
+  }
+
   const handleAssignTable = async (tableId: string) => {
     if (!selectedGuest) return
 
+    setShowTableModal(false)
     setLoading(true)
     try {
       // Supprimer les anciennes assignations
@@ -344,46 +376,146 @@ export default function SeatingMobilePage() {
 
           {/* Grille des tables */}
           <div className="grid grid-cols-2 gap-3 pb-20">
-            {tables.map(table => (
-              <button
-                key={table.id}
-                onClick={() => handleAssignTable(table.id)}
-                disabled={table.available_seats === 0}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  table.available_seats === 0
-                    ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
-                    : 'bg-white active:scale-95 hover:shadow-md'
-                }`}
-                style={{
-                  borderColor: table.available_seats > 0 ? table.color_code : undefined,
-                  backgroundColor: table.available_seats > 0 ? `${table.color_code}10` : undefined
-                }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: table.color_code }}
-                  />
-                  <span className="text-xs font-medium">
-                    {table.occupied_seats}/{table.capacity}
-                  </span>
+            {tables.map(table => {
+              const guestsAtTable = tableGuests[table.id] || []
+              const displayGuests = guestsAtTable.slice(0, 2)
+              
+              return (
+                <button
+                  key={table.id}
+                  onClick={() => handleTableClick(table)}
+                  disabled={table.available_seats === 0}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    table.available_seats === 0
+                      ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
+                      : 'bg-white active:scale-95 hover:shadow-md'
+                  }`}
+                  style={{
+                    borderColor: table.available_seats > 0 ? table.color_code : undefined,
+                    backgroundColor: table.available_seats > 0 ? `${table.color_code}10` : undefined
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span 
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: table.color_code }}
+                    />
+                    <span className="text-xs font-medium">
+                      {table.occupied_seats}/{table.capacity}
+                    </span>
+                  </div>
+                  <div className="font-bold text-sm">
+                    Table {table.table_number}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {table.table_name}
+                  </div>
+                  
+                  {/* Aperçu des invités */}
+                  {guestsAtTable.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      {displayGuests.map((guest, idx) => (
+                        <div key={guest.id} className="text-xs text-gray-700 truncate">
+                          • {guest.first_name} {guest.last_name}
+                        </div>
+                      ))}
+                      {guestsAtTable.length > 2 && (
+                        <div className="text-xs text-gray-500 italic">
+                          +{guestsAtTable.length - 2} autres...
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className={`text-xs mt-2 font-medium ${
+                    table.available_seats === 0 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {table.available_seats === 0 
+                      ? 'Complète' 
+                      : `${table.available_seats} place${table.available_seats > 1 ? 's' : ''}`
+                    }
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Modal détails de table */}
+      {showTableModal && selectedTable && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            {/* Header du modal */}
+            <div 
+              className="p-4 border-b"
+              style={{ backgroundColor: `${selectedTable.color_code}20` }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-lg">Table {selectedTable.table_number}</h3>
+                  <p className="text-sm text-gray-600">{selectedTable.table_name}</p>
+                  <p className="text-sm mt-1">
+                    <span className="font-medium">{selectedTable.occupied_seats}/{selectedTable.capacity}</span> places occupées
+                  </p>
                 </div>
-                <div className="font-bold text-sm">
-                  Table {table.table_number}
+                <button
+                  onClick={() => setShowTableModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Liste des invités */}
+            <div className="p-4 max-h-[50vh] overflow-y-auto">
+              {selectedTable.guests.length > 0 ? (
+                <div>
+                  <h4 className="font-medium text-sm text-gray-700 mb-3">Invités à cette table :</h4>
+                  <div className="space-y-2">
+                    {selectedTable.guests.map((guest, index) => (
+                      <div 
+                        key={guest.id} 
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-500">
+                            {index + 1}.
+                          </span>
+                          <span className="text-sm font-medium">
+                            {guest.first_name} {guest.last_name}
+                          </span>
+                        </div>
+                        {guest.checked_in && (
+                          <span className="text-green-600 text-sm">✓ Présent</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {table.table_name}
+              ) : (
+                <p className="text-gray-500 text-center py-4">Aucun invité assigné à cette table</p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="p-4 border-t bg-gray-50">
+              {selectedTable.available_seats > 0 ? (
+                <button
+                  onClick={() => handleAssignTable(selectedTable.id)}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium"
+                >
+                  Assigner {selectedGuest?.first_name} {selectedGuest?.last_name} ici
+                </button>
+              ) : (
+                <div className="text-center text-red-600 font-medium">
+                  Table complète - Aucune place disponible
                 </div>
-                <div className={`text-xs mt-2 font-medium ${
-                  table.available_seats === 0 ? 'text-red-600' : 'text-green-600'
-                }`}>
-                  {table.available_seats === 0 
-                    ? 'Complète' 
-                    : `${table.available_seats} place${table.available_seats > 1 ? 's' : ''}`
-                  }
-                </div>
-              </button>
-            ))}
+              )}
+            </div>
           </div>
         </div>
       )}
