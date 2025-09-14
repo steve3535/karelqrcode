@@ -36,6 +36,7 @@ export default function SeatingMobileV2Page() {
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null)
   const [movingGuest, setMovingGuest] = useState<Guest | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchMode, setSearchMode] = useState<'all' | 'unassigned'>('all')
   const [expandedTables, setExpandedTables] = useState<Set<number>>(new Set())
 
   useEffect(() => {
@@ -144,10 +145,15 @@ export default function SeatingMobileV2Page() {
     setExpandedTables(newExpanded)
   }
 
-  const filteredGuests = guests.filter(g =>
-    !searchTerm ||
-    `${g.first_name} ${g.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredGuests = guests.filter(g => {
+    const matchesSearch = !searchTerm ||
+      `${g.first_name} ${g.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+
+    if (viewMode === 'guests' && searchMode === 'unassigned') {
+      return matchesSearch && !g.is_assigned
+    }
+    return matchesSearch
+  })
 
   if (loading) {
     return (
@@ -162,7 +168,7 @@ export default function SeatingMobileV2Page() {
       {/* Header fixe */}
       <div className="sticky top-0 z-40 bg-white shadow-md">
         <div className="px-4 py-3 flex items-center justify-between">
-          <Link href="/admin/seating" className="text-purple-600">
+          <Link href="/" className="text-purple-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -246,8 +252,36 @@ export default function SeatingMobileV2Page() {
 
       {/* Vue Tables */}
       {viewMode === 'tables' && (
-        <div className="p-4 space-y-3">
-          {tables.map(table => (
+        <div className="p-4">
+          {/* Barre de recherche permanente */}
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Rechercher un invité dans les tables..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            {searchTerm && (
+              <p className="text-xs text-gray-500 mt-2">
+                Affichage des tables contenant "{searchTerm}"
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+
+          {tables.map(table => {
+            // Si recherche active, n'afficher que les tables avec des invités correspondants
+            const hasMatchingGuests = searchTerm
+              ? table.seated_guests?.some((guest: any) =>
+                  guest.guest_name.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+              : true
+
+            if (!hasMatchingGuests) return null
+
+            return (
             <div
               key={table.table_number}
               className="bg-white rounded-lg shadow-sm overflow-hidden"
@@ -380,7 +414,9 @@ export default function SeatingMobileV2Page() {
                 </>
               )}
             </div>
-          ))}
+            )
+          })}
+          </div>
         </div>
       )}
 
@@ -388,44 +424,83 @@ export default function SeatingMobileV2Page() {
       {viewMode === 'guests' && (
         <div className="p-4">
           {/* Recherche */}
-          <input
-            type="text"
-            placeholder="Rechercher un invité..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-4"
-          />
+          <div className="space-y-3 mb-4">
+            <input
+              type="text"
+              placeholder="Rechercher un invité..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
 
-          {/* Liste des invités non assignés */}
+            {/* Filtres de recherche */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSearchMode('all')}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                  searchMode === 'all'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                Tous ({guests.length})
+              </button>
+              <button
+                onClick={() => setSearchMode('unassigned')}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                  searchMode === 'unassigned'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                Non assignés ({guests.filter(g => !g.is_assigned).length})
+              </button>
+            </div>
+          </div>
+
+          {/* Liste des invités */}
           <div className="space-y-2">
             {filteredGuests
-              .filter(g => !g.is_assigned)
+              .filter(g => searchMode === 'all' || !g.is_assigned)
               .map(guest => (
                 <div
                   key={guest.id}
                   className="bg-white p-3 rounded-lg shadow-sm flex items-center justify-between"
                 >
-                  <div>
+                  <div className="flex-1">
                     <div className="font-medium">
                       {guest.first_name} {guest.last_name}
                     </div>
+                    {guest.is_assigned && guest.table_number && (
+                      <div className="text-xs text-gray-500">
+                        Table {guest.table_number} - {guest.table_name}
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => {
                       setMovingGuest(guest)
                       setViewMode('tables')
                     }}
-                    className="px-3 py-1 bg-purple-600 text-white rounded text-sm"
+                    className={`px-3 py-1 rounded text-sm font-medium ${
+                      guest.is_assigned
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-purple-600 text-white'
+                    }`}
                   >
-                    Assigner
+                    {guest.is_assigned ? 'Déplacer' : 'Assigner'}
                   </button>
                 </div>
               ))}
           </div>
 
-          {filteredGuests.filter(g => !g.is_assigned).length === 0 && (
+          {filteredGuests.filter(g => searchMode === 'all' || !g.is_assigned).length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'Aucun invité trouvé' : 'Tous les invités sont assignés'}
+              {searchTerm
+                ? 'Aucun invité trouvé'
+                : searchMode === 'unassigned'
+                  ? 'Tous les invités sont assignés'
+                  : 'Aucune donnée'}
             </div>
           )}
         </div>
