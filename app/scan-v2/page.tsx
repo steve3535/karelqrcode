@@ -6,7 +6,7 @@ import jsQR from 'jsqr'
 import Link from 'next/link'
 
 type GuestInfo = {
-  guest_id: string  // UUID
+  id: string  // UUID - changé de guest_id à id pour correspondre à all_guests_status
   first_name: string
   last_name: string
   full_name?: string
@@ -307,17 +307,17 @@ export default function ScannerV2() {
   }
 
   const handleCheckout = async () => {
-    if (!guestInfo || !guestInfo.guest_id) return
-    
+    if (!guestInfo || !guestInfo.id) return
+
     setIsLoading(true)
     try {
       const { error } = await supabase
         .from('guests')
-        .update({ 
-          checked_in: false, 
-          checked_in_at: null 
+        .update({
+          checked_in: false,
+          checked_in_at: null
         })
-        .eq('id', guestInfo.guest_id)
+        .eq('id', guestInfo.id)
 
       if (error) {
         console.error('Erreur checkout:', error)

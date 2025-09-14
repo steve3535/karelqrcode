@@ -243,7 +243,7 @@ export default function SeatingMobilePage() {
             <div className="text-gray-500">Assignés</div>
           </div>
           <div className="text-center">
-            <div className="font-bold text-lg text-green-600">{tables.reduce((acc, t) => acc + t.available_seats, 0)}</div>
+            <div className="font-bold text-lg text-green-600">{tables.filter(t => t.table_number <= 26).reduce((acc, t) => acc + t.available_seats, 0)}</div>
             <div className="text-gray-500">Places libres</div>
           </div>
         </div>
