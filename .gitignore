@@ -50,7 +50,6 @@ __pycache__/
 # Excel files (contain sensitive guest data)
 *.xlsx
 *.xls
-*.csv
 
 # Images and screenshots (may contain sensitive info)
 #*.png
