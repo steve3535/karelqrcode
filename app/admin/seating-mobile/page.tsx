@@ -117,16 +117,15 @@ export default function SeatingMobilePage() {
     try {
       // Supprimer les anciennes assignations
       await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .delete()
         .eq('guest_id', selectedGuest.id)
 
       // Trouver le prochain siège disponible
       const { data: existingSeats } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .select('seat_number')
         .eq('table_id', tableId)
-        .eq('is_active', true)
 
       const occupiedSeats = existingSeats?.map(s => s.seat_number) || []
       let nextSeat = 1
@@ -136,12 +135,13 @@ export default function SeatingMobilePage() {
 
       // Créer la nouvelle assignation
       const { error } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .insert({
           guest_id: selectedGuest.id,
           table_id: tableId,
           seat_number: nextSeat,
-          is_active: true
+          qr_code: `WEDDING-${selectedGuest.id}-TABLE${tableId}`,
+          checked_in: false
         })
 
       if (error) throw error
@@ -170,7 +170,7 @@ export default function SeatingMobilePage() {
       setLoading(true)
       try {
         await supabase
-          .from('seat_assignments')
+          .from('seating_assignments')
           .delete()
           .eq('guest_id', guestId)
 

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import QRCode from 'qrcode'
 
 type Guest = {
-  guest_id: string  // UUID depuis la vue guest_checkin_info
+  id: string  // UUID de l'invité
   first_name: string
   last_name: string
   table_number: number | null
@@ -14,6 +14,8 @@ type Guest = {
   color_code: string | null
   color_name: string | null
   qr_code: string | null
+  is_assigned: boolean
+  status: string
 }
 
 export default function QRCodesPage() {
@@ -30,13 +32,13 @@ export default function QRCodesPage() {
   const loadGuests = async () => {
     try {
       const { data, error } = await supabase
-        .from('guest_checkin_info')
+        .from('all_guests_status')
         .select('*')
         .order('last_name', { ascending: true })
         .order('first_name', { ascending: true })
 
       if (error) throw error
-      
+
       if (data) {
         setGuests(data)
         // Générer tous les QR codes
@@ -61,7 +63,7 @@ export default function QRCodesPage() {
         
         // Debug: afficher quelques exemples
         if (guest.first_name === 'Carine' || guest.first_name === 'Shalom' || guest.first_name === 'Manuella') {
-          console.log(`QR pour ${guest.first_name} ${guest.last_name}: "${qrContent}", ID: ${guest.guest_id}`)
+          console.log(`QR pour ${guest.first_name} ${guest.last_name}: "${qrContent}", ID: ${guest.id}`)
         }
         
         const qrDataUrl = await QRCode.toDataURL(qrContent, {
@@ -72,7 +74,7 @@ export default function QRCodesPage() {
             light: '#FFFFFF'
           }
         })
-        codes[guest.guest_id] = qrDataUrl
+        codes[guest.id] = qrDataUrl
       } catch (error) {
         console.error(`Error generating QR for ${guest.first_name} ${guest.last_name}:`, error)
       }
@@ -98,9 +100,9 @@ export default function QRCodesPage() {
     const filteredGuests = getFilteredGuests()
     
     for (const guest of filteredGuests) {
-      if (qrCodes[guest.guest_id]) {
+      if (qrCodes[guest.id]) {
         await new Promise(resolve => setTimeout(resolve, 100)) // Petit délai entre chaque téléchargement
-        downloadQRCode(guest.guest_id, guest.first_name, guest.last_name)
+        downloadQRCode(guest.id, guest.first_name, guest.last_name)
       }
     }
   }
@@ -162,7 +164,7 @@ export default function QRCodesPage() {
           <div class="qr-grid">
             ${filteredGuests.map(guest => `
               <div class="qr-item">
-                <img src="${qrCodes[guest.guest_id] || ''}" alt="QR Code" />
+                <img src="${qrCodes[guest.id] || ''}" alt="QR Code" />
                 <div class="guest-name">${guest.first_name} ${guest.last_name}</div>
                 ${guest.table_number ? `
                   <div class="table-info">
@@ -190,9 +192,9 @@ export default function QRCodesPage() {
 
     // Filtrer par statut d'assignation
     if (filter === 'assigned') {
-      filtered = filtered.filter(g => g.table_number !== null)
+      filtered = filtered.filter(g => g.is_assigned === true)
     } else if (filter === 'unassigned') {
-      filtered = filtered.filter(g => g.table_number === null)
+      filtered = filtered.filter(g => g.is_assigned === false)
     }
 
     // Filtrer par recherche
@@ -279,7 +281,7 @@ export default function QRCodesPage() {
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                Assignés ({guests.filter(g => g.table_number !== null).length})
+                Assignés ({guests.filter(g => g.is_assigned === true).length})
               </button>
               <button
                 onClick={() => setFilter('unassigned')}
@@ -289,7 +291,7 @@ export default function QRCodesPage() {
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                Non assignés ({guests.filter(g => g.table_number === null).length})
+                Non assignés ({guests.filter(g => g.is_assigned === false).length})
               </button>
             </div>
             <input
@@ -305,11 +307,11 @@ export default function QRCodesPage() {
         {/* QR Codes Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredGuests.map(guest => (
-            <div key={guest.guest_id} className="bg-white rounded-xl shadow-lg p-4">
+            <div key={guest.id} className="bg-white rounded-xl shadow-lg p-4">
               <div className="text-center">
-                {qrCodes[guest.guest_id] && (
-                  <img 
-                    src={qrCodes[guest.guest_id]} 
+                {qrCodes[guest.id] && (
+                  <img
+                    src={qrCodes[guest.id]}
                     alt={`QR Code ${guest.first_name} ${guest.last_name}`}
                     className="w-full h-auto mb-3"
                   />
@@ -317,9 +319,9 @@ export default function QRCodesPage() {
                 <h3 className="font-semibold text-gray-800 text-sm mb-1">
                   {guest.first_name} {guest.last_name}
                 </h3>
-                {guest.table_number ? (
+                {guest.is_assigned ? (
                   <div className="flex items-center justify-center gap-1 text-xs">
-                    <span 
+                    <span
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: guest.color_code || '#ccc' }}
                     ></span>
@@ -331,7 +333,7 @@ export default function QRCodesPage() {
                   <span className="text-xs text-red-500">Non assigné</span>
                 )}
                 <button
-                  onClick={() => downloadQRCode(guest.guest_id, guest.first_name, guest.last_name)}
+                  onClick={() => downloadQRCode(guest.id, guest.first_name, guest.last_name)}
                   className="mt-2 px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
                 >
                   Télécharger

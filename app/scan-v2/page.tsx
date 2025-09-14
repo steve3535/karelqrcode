@@ -66,9 +66,9 @@ export default function ScannerV2() {
   const loadStats = async () => {
     try {
       const { count: assignedCount } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
+        .lte('table_id', 26)  // Ne compter que les tables adultes
 
       const { count: checkedInCount } = await supabase
         .from('guests')
@@ -79,12 +79,12 @@ export default function ScannerV2() {
         .from('guests')
         .select('*', { count: 'exact', head: true })
 
-      // Récupérer la capacité totale RÉELLE depuis la base de données
+      // Récupérer la capacité totale RÉELLE depuis la base de données (26 tables adultes)
       const { data: tables } = await supabase
         .from('tables')
         .select('capacity')
-        .lte('table_number', 26)
-      
+        .lte('table_number', 26)  // Table 27 est pour les enfants, pas comptée
+
       const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 260
 
       setStats({
@@ -225,7 +225,7 @@ export default function ScannerV2() {
 
       // Rechercher directement par le QR code exact
       const { data: guests, error } = await supabase
-        .from('guest_checkin_info')
+        .from('all_guests_status')
         .select('*')
         .eq('qr_code', qrCode)
 
@@ -253,9 +253,9 @@ export default function ScannerV2() {
         }
       }
 
-      // Vérifier si on a bien un guest_id
-      if (!data.guest_id) {
-        console.error('guest_id manquant dans les données:', data)
+      // Vérifier si on a bien un id
+      if (!data.id) {
+        console.error('id manquant dans les données:', data)
         setMessage('❌ Erreur: Identifiant invité manquant')
         return
       }
@@ -269,14 +269,14 @@ export default function ScannerV2() {
         // Afficher quand même les infos mais avec un message d'avertissement
       } else {
         // Faire le check-in
-        console.log('Tentative de check-in pour guest_id:', data.guest_id)
+        console.log('Tentative de check-in pour id:', data.id)
         const { error: updateError } = await supabase
           .from('guests')
-          .update({ 
-            checked_in: true, 
-            checked_in_at: new Date().toISOString() 
+          .update({
+            checked_in: true,
+            checked_in_at: new Date().toISOString()
           })
-          .eq('id', data.guest_id) // guest_id est déjà un UUID, pas besoin de parseInt
+          .eq('id', data.id) // id est déjà un UUID
 
         if (updateError) {
           console.error('Erreur check-in:', updateError)
@@ -559,7 +559,7 @@ export default function ScannerV2() {
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">Siège</p>
-                      <p className="text-2xl font-bold">{guestInfo.seat_number}</p>
+                      <p className="text-2xl font-bold">{guestInfo.seat_number || '-'}</p>
                     </div>
                   </div>
                   

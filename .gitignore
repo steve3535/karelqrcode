@@ -63,6 +63,9 @@ __pycache__/
 /supabase/fix-*.sql
 /supabase/recreate-*.sql
 
+# Archive des anciens scripts SQL
+/supabase/archive/
+
 # IDE
 .vscode/
 .idea/

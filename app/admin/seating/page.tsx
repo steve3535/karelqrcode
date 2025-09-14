@@ -358,7 +358,7 @@ function SeatingManagement() {
 
       // D'abord, SUPPRIMER toutes les anciennes assignations de cet invité
       const { error: deleteError } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .delete()
         .eq('guest_id', guest.id)
 
@@ -368,10 +368,9 @@ function SeatingManagement() {
 
       // Trouver le prochain siège disponible pour cette table
       const { data: existingSeats } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .select('seat_number')
         .eq('table_id', tableId)
-        .eq('is_active', true)
         .order('seat_number')
 
       const usedSeats = existingSeats?.map(s => s.seat_number) || []
@@ -392,14 +391,13 @@ function SeatingManagement() {
 
       // Créer la nouvelle assignation
       const { error } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .insert({
           guest_id: guest.id,
           table_id: tableId,
           seat_number: nextSeat,
-          is_active: true,
-          assigned_by: 'Admin',
-          assigned_at: new Date().toISOString()
+          qr_code: `WEDDING-${guest.id}-TABLE${tableId}`,
+          checked_in: false
         })
 
       if (error) {
@@ -429,7 +427,7 @@ function SeatingManagement() {
       
       // SUPPRIMER toutes les assignations de cet invité
       const { data, error } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .delete()
         .eq('guest_id', guestId)
         .select()
@@ -498,11 +496,11 @@ function SeatingManagement() {
           </div>
           <div className="bg-white px-4 py-2 rounded-lg shadow">
             <span className="text-gray-600">Places occupées: </span>
-            <span className="font-bold">{tables.reduce((acc, t) => acc + t.occupied_seats, 0)}</span>
+            <span className="font-bold">{tables.filter(t => t.table_number <= 26).reduce((acc, t) => acc + t.occupied_seats, 0)}</span>
           </div>
           <div className="bg-white px-4 py-2 rounded-lg shadow">
             <span className="text-gray-600">Places libres: </span>
-            <span className="font-bold text-green-600">{tables.reduce((acc, t) => acc + t.available_seats, 0)}</span>
+            <span className="font-bold text-green-600">{tables.filter(t => t.table_number <= 26).reduce((acc, t) => acc + t.available_seats, 0)}</span>
           </div>
         </div>
       </div>

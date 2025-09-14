@@ -32,11 +32,11 @@ export default function Home() {
         .from('guests')
         .select('*', { count: 'exact', head: true })
 
-      // Compter les places assignées
+      // Compter les places assignées (tables adultes uniquement)
       const { count: assignedCount } = await supabase
-        .from('seat_assignments')
+        .from('seating_assignments')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
+        .lte('table_id', 26)  // Ne compter que les tables adultes
 
       // Compter les invités présents
       const { count: checkedInCount } = await supabase
@@ -44,12 +44,12 @@ export default function Home() {
         .select('*', { count: 'exact', head: true })
         .eq('checked_in', true)
 
-      // Récupérer la capacité totale RÉELLE depuis la base de données
+      // Récupérer la capacité totale RÉELLE depuis la base de données (26 tables adultes)
       const { data: tables } = await supabase
         .from('tables')
         .select('capacity')
-        .lte('table_number', 26)
-      
+        .lte('table_number', 26)  // Table 27 est pour les enfants, pas comptée
+
       const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 260
       
       setStats({
