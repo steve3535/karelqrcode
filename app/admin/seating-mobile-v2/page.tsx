@@ -288,7 +288,7 @@ export default function SeatingMobileV2Page() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </Link>
-          <h1 className="text-xl font-bold">Gestion Mobile V2</h1>
+          <h1 className="text-xl font-bold">Gestion des Places</h1>
           <button
             onClick={() => setShowAddGuest(true)}
             className="bg-green-600 text-white p-2 rounded-lg"
