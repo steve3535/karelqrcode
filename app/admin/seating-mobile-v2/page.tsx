@@ -38,6 +38,13 @@ export default function SeatingMobileV2Page() {
   const [searchTerm, setSearchTerm] = useState('')
   const [searchMode, setSearchMode] = useState<'all' | 'unassigned'>('all')
   const [expandedTables, setExpandedTables] = useState<Set<number>>(new Set())
+  const [showAddGuest, setShowAddGuest] = useState(false)
+  const [newGuest, setNewGuest] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    table_id: null as number | null
+  })
 
   useEffect(() => {
     loadData()
@@ -114,6 +121,114 @@ export default function SeatingMobileV2Page() {
     }
   }
 
+  const handleAddNewGuest = async () => {
+    if (!newGuest.first_name || !newGuest.last_name) {
+      setMessage('❌ Prénom et nom sont obligatoires')
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Générer un QR code unique pour l'invité
+      const qrCode = `WEDDING-${newGuest.first_name.trim()} ${newGuest.last_name.trim()}-${Date.now()}`
+
+      // Créer l'invité
+      const { data: createdGuest, error: guestError } = await supabase
+        .from('guests')
+        .insert({
+          first_name: newGuest.first_name.trim(),
+          last_name: newGuest.last_name.trim(),
+          email: newGuest.email?.trim() || null,
+          qr_code: qrCode,
+          invitation_sent: false,
+          rsvp_status: 'confirmed',
+          checked_in: false
+        })
+        .select()
+        .single()
+
+      if (guestError) throw guestError
+
+      // Si une table est sélectionnée, assigner directement
+      if (newGuest.table_id) {
+        // Trouver le prochain siège disponible
+        const { data: existingSeats } = await supabase
+          .from('seating_assignments')
+          .select('seat_number')
+          .eq('table_id', newGuest.table_id)
+
+        const occupiedSeats = existingSeats?.map(s => s.seat_number) || []
+        let nextSeat = 1
+        while (occupiedSeats.includes(nextSeat) && nextSeat <= 10) {
+          nextSeat++
+        }
+
+        // Créer l'assignation
+        const { error: assignError } = await supabase
+          .from('seating_assignments')
+          .insert({
+            guest_id: createdGuest.id,
+            table_id: newGuest.table_id,
+            seat_number: nextSeat,
+            qr_code: `WEDDING-${createdGuest.first_name} ${createdGuest.last_name}-${Date.now()}`,
+            checked_in: false
+          })
+
+        if (assignError) {
+          console.error('Error assigning seat:', assignError)
+          setMessage(`✅ ${newGuest.first_name} ajouté mais non assigné`)
+        } else {
+          setMessage(`✅ ${newGuest.first_name} ajouté à la table ${newGuest.table_id}`)
+        }
+      } else {
+        setMessage(`✅ ${newGuest.first_name} ajouté (non assigné)`)
+      }
+
+      // Réinitialiser le formulaire
+      setNewGuest({ first_name: '', last_name: '', email: '', table_id: null })
+      setShowAddGuest(false)
+      await loadData()
+
+    } catch (error) {
+      console.error('Error adding guest:', error)
+      setMessage('❌ Erreur lors de l\'ajout')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteGuest = async (guestId: string) => {
+    if (!confirm('Supprimer définitivement cet invité ?')) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Supprimer d'abord les assignations si elles existent
+      await supabase
+        .from('seating_assignments')
+        .delete()
+        .eq('guest_id', guestId)
+
+      // Puis supprimer l'invité
+      const { error } = await supabase
+        .from('guests')
+        .delete()
+        .eq('id', guestId)
+
+      if (error) throw error
+
+      setMessage('✅ Invité supprimé')
+      await loadData()
+      setTimeout(() => setMessage(''), 3000)
+    } catch (error) {
+      console.error('Error deleting guest:', error)
+      setMessage('❌ Erreur lors de la suppression')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleRemoveFromTable = async (guestId: string) => {
     if (!confirm('Retirer cet invité de sa table ?')) return
 
@@ -174,7 +289,14 @@ export default function SeatingMobileV2Page() {
             </svg>
           </Link>
           <h1 className="text-xl font-bold">Gestion Mobile V2</h1>
-          <div className="w-6"></div>
+          <button
+            onClick={() => setShowAddGuest(true)}
+            className="bg-green-600 text-white p-2 rounded-lg"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </button>
         </div>
 
         {/* Tabs */}
@@ -477,19 +599,32 @@ export default function SeatingMobileV2Page() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => {
-                      setMovingGuest(guest)
-                      setViewMode('tables')
-                    }}
-                    className={`px-3 py-1 rounded text-sm font-medium ${
-                      guest.is_assigned
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-purple-600 text-white'
-                    }`}
-                  >
-                    {guest.is_assigned ? 'Déplacer' : 'Assigner'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setMovingGuest(guest)
+                        setViewMode('tables')
+                      }}
+                      className={`px-3 py-1 rounded text-sm font-medium ${
+                        guest.is_assigned
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-purple-600 text-white'
+                      }`}
+                    >
+                      {guest.is_assigned ? 'Déplacer' : 'Assigner'}
+                    </button>
+                    {!guest.is_assigned && (
+                      <button
+                        onClick={() => handleDeleteGuest(guest.id)}
+                        className="px-2 py-1 bg-red-600 text-white rounded text-sm"
+                        title="Supprimer"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
           </div>
@@ -503,6 +638,98 @@ export default function SeatingMobileV2Page() {
                   : 'Aucune donnée'}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal d'ajout d'invité - Version Mobile */}
+      {showAddGuest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Nouvel invité</h3>
+              <button
+                onClick={() => {
+                  setShowAddGuest(false)
+                  setNewGuest({ first_name: '', last_name: '', email: '', table_id: null })
+                }}
+                className="text-gray-500"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Prénom *
+                </label>
+                <input
+                  type="text"
+                  value={newGuest.first_name}
+                  onChange={(e) => setNewGuest({ ...newGuest, first_name: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Jean"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom *
+                </label>
+                <input
+                  type="text"
+                  value={newGuest.last_name}
+                  onChange={(e) => setNewGuest({ ...newGuest, last_name: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Dupont"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email (optionnel)
+                </label>
+                <input
+                  type="email"
+                  value={newGuest.email}
+                  onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="jean.dupont@email.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Table (optionnel)
+                </label>
+                <select
+                  value={newGuest.table_id || ''}
+                  onChange={(e) => setNewGuest({ ...newGuest, table_id: e.target.value ? Number(e.target.value) : null })}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">-- Non assigné --</option>
+                  {tables
+                    .filter(t => t.available_seats > 0)
+                    .map(table => (
+                      <option key={table.table_number} value={table.table_number}>
+                        Table {table.table_number} ({table.available_seats} pl.)
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleAddNewGuest}
+              disabled={!newGuest.first_name || !newGuest.last_name}
+              className="w-full mt-6 bg-green-600 text-white py-3 rounded-lg font-semibold disabled:bg-gray-300 disabled:text-gray-500"
+            >
+              Ajouter l'invité
+            </button>
+          </div>
         </div>
       )}
     </div>

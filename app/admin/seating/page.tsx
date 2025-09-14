@@ -39,7 +39,7 @@ type Table = {
 }
 
 // Composant Invité draggable avec statut (pour la liste complète)
-function DraggableGuestWithStatus({ guest }: { guest: any }) {
+function DraggableGuestWithStatus({ guest, onDelete }: { guest: any, onDelete?: (id: string) => void }) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'guest',
     item: guest,
@@ -91,9 +91,25 @@ function DraggableGuestWithStatus({ guest }: { guest: any }) {
           </span>
         )}
         {!guest.is_assigned && (
-          <span className="text-gray-400" title="Non assigné">
-            ○
-          </span>
+          <>
+            <span className="text-gray-400" title="Non assigné">
+              ○
+            </span>
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(guest.id)
+                }}
+                className="ml-1 text-red-500 hover:text-red-700"
+                title="Supprimer définitivement"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -293,6 +309,13 @@ function SeatingManagement() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'unassigned' | 'assigned' | 'checked_in'>('all')
+  const [showAddGuest, setShowAddGuest] = useState(false)
+  const [newGuest, setNewGuest] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    table_id: null as number | null
+  })
 
   // Détecter si on est sur mobile et rediriger
   useEffect(() => {
@@ -421,6 +444,107 @@ function SeatingManagement() {
     }
   }
 
+  const handleAddNewGuest = async () => {
+    if (!newGuest.first_name || !newGuest.last_name) {
+      setMessage('❌ Prénom et nom sont obligatoires')
+      return
+    }
+
+    try {
+      // Générer un QR code unique pour l'invité
+      const qrCode = `WEDDING-${newGuest.first_name.trim()} ${newGuest.last_name.trim()}-${Date.now()}`
+
+      // Créer l'invité
+      const { data: createdGuest, error: guestError } = await supabase
+        .from('guests')
+        .insert({
+          first_name: newGuest.first_name.trim(),
+          last_name: newGuest.last_name.trim(),
+          email: newGuest.email?.trim() || null,
+          qr_code: qrCode,
+          invitation_sent: false,
+          rsvp_status: 'confirmed',
+          checked_in: false
+        })
+        .select()
+        .single()
+
+      if (guestError) throw guestError
+
+      // Si une table est sélectionnée, assigner directement
+      if (newGuest.table_id) {
+        // Trouver le prochain siège disponible
+        const { data: existingSeats } = await supabase
+          .from('seating_assignments')
+          .select('seat_number')
+          .eq('table_id', newGuest.table_id)
+
+        const occupiedSeats = existingSeats?.map(s => s.seat_number) || []
+        let nextSeat = 1
+        while (occupiedSeats.includes(nextSeat) && nextSeat <= 10) {
+          nextSeat++
+        }
+
+        // Créer l'assignation
+        const { error: assignError } = await supabase
+          .from('seating_assignments')
+          .insert({
+            guest_id: createdGuest.id,
+            table_id: newGuest.table_id,
+            seat_number: nextSeat,
+            qr_code: `WEDDING-${createdGuest.first_name} ${createdGuest.last_name}-${Date.now()}`,
+            checked_in: false
+          })
+
+        if (assignError) {
+          console.error('Error assigning seat:', assignError)
+          setMessage(`✅ Invité créé mais non assigné à la table`)
+        } else {
+          setMessage(`✅ ${newGuest.first_name} ajouté et assigné à la table ${newGuest.table_id}`)
+        }
+      } else {
+        setMessage(`✅ ${newGuest.first_name} ajouté (non assigné)`)
+      }
+
+      // Réinitialiser le formulaire
+      setNewGuest({ first_name: '', last_name: '', email: '', table_id: null })
+      setShowAddGuest(false)
+      await loadData()
+
+    } catch (error) {
+      console.error('Error adding guest:', error)
+      setMessage('❌ Erreur lors de l\'ajout de l\'invité')
+    }
+  }
+
+  const handleDeleteGuest = async (guestId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement cet invité ?')) {
+      return
+    }
+
+    try {
+      // Supprimer d'abord les assignations si elles existent
+      await supabase
+        .from('seating_assignments')
+        .delete()
+        .eq('guest_id', guestId)
+
+      // Puis supprimer l'invité
+      const { error } = await supabase
+        .from('guests')
+        .delete()
+        .eq('id', guestId)
+
+      if (error) throw error
+
+      setMessage('✅ Invité supprimé définitivement')
+      await loadData()
+    } catch (error) {
+      console.error('Error deleting guest:', error)
+      setMessage('❌ Erreur lors de la suppression')
+    }
+  }
+
   const handleRemoveGuest = async (guestId: string) => {
     try {
       console.log('Removing guest:', guestId)
@@ -518,8 +642,16 @@ function SeatingManagement() {
         {/* Panneau de tous les invités */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-lg p-4 sticky top-4">
-            <h2 className="font-bold text-lg mb-3">Tous les invités</h2>
-            
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-lg">Tous les invités</h2>
+              <button
+                onClick={() => setShowAddGuest(true)}
+                className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition text-sm"
+              >
+                + Ajouter
+              </button>
+            </div>
+
             {/* Filtres */}
             <div className="flex gap-1 mb-3">
               <button
@@ -569,7 +701,11 @@ function SeatingManagement() {
             <div className="space-y-2 max-h-[600px] overflow-y-auto">
               {filteredGuests.length > 0 ? (
                 filteredGuests.map(guest => (
-                  <DraggableGuestWithStatus key={guest.id} guest={guest} />
+                  <DraggableGuestWithStatus
+                    key={guest.id}
+                    guest={guest}
+                    onDelete={!guest.is_assigned ? handleDeleteGuest : undefined}
+                  />
                 ))
               ) : (
                 <p className="text-gray-400 text-center text-sm italic">
@@ -615,6 +751,95 @@ function SeatingManagement() {
           </div>
         </div>
       </div>
+
+      {/* Modal d'ajout d'invité */}
+      {showAddGuest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold mb-4">Ajouter un nouvel invité</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Prénom *
+                </label>
+                <input
+                  type="text"
+                  value={newGuest.first_name}
+                  onChange={(e) => setNewGuest({ ...newGuest, first_name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Jean"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom *
+                </label>
+                <input
+                  type="text"
+                  value={newGuest.last_name}
+                  onChange={(e) => setNewGuest({ ...newGuest, last_name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Dupont"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email (optionnel)
+                </label>
+                <input
+                  type="email"
+                  value={newGuest.email}
+                  onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="jean.dupont@email.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assigner à une table (optionnel)
+                </label>
+                <select
+                  value={newGuest.table_id || ''}
+                  onChange={(e) => setNewGuest({ ...newGuest, table_id: e.target.value ? Number(e.target.value) : null })}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">-- Non assigné --</option>
+                  {tables
+                    .filter(t => t.available_seats > 0)
+                    .map(table => (
+                      <option key={table.id} value={table.id}>
+                        Table {table.table_number} - {table.table_name} ({table.available_seats} places libres)
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleAddNewGuest}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-medium"
+              >
+                Ajouter l'invité
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddGuest(false)
+                  setNewGuest({ first_name: '', last_name: '', email: '', table_id: null })
+                }}
+                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-medium"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
