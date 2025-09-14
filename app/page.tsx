@@ -176,10 +176,10 @@ export default function Home() {
             href="/admin/seating" 
             className="group"
             onClick={(e) => {
-              // Si on est sur mobile, aller directement à la version mobile
+              // Si on est sur mobile, aller directement à la version mobile v2
               if (typeof window !== 'undefined' && window.innerWidth <= 768) {
                 e.preventDefault()
-                window.location.href = '/admin/seating-mobile'
+                window.location.href = '/admin/seating-mobile-v2'
               }
             }}
           >

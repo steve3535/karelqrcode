@@ -36,6 +36,7 @@ export default function SeatingMobileV2Page() {
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null)
   const [movingGuest, setMovingGuest] = useState<Guest | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [expandedTables, setExpandedTables] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     loadData()
@@ -131,6 +132,16 @@ export default function SeatingMobileV2Page() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const toggleTableExpansion = (tableNumber: number) => {
+    const newExpanded = new Set(expandedTables)
+    if (newExpanded.has(tableNumber)) {
+      newExpanded.delete(tableNumber)
+    } else {
+      newExpanded.add(tableNumber)
+    }
+    setExpandedTables(newExpanded)
   }
 
   const filteredGuests = guests.filter(g =>
@@ -245,8 +256,9 @@ export default function SeatingMobileV2Page() {
               }}
             >
               {/* En-tête de table */}
-              <div
-                className="p-3 flex items-center justify-between"
+              <button
+                onClick={() => toggleTableExpansion(table.table_number)}
+                className="w-full p-3 flex items-center justify-between hover:bg-gray-50"
                 style={{ backgroundColor: `${table.color_code}10` }}
               >
                 <div>
@@ -256,97 +268,116 @@ export default function SeatingMobileV2Page() {
                   </div>
                   <div className="text-sm text-gray-600">{table.table_name}</div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-lg">
-                    {table.occupied_seats}/{table.capacity}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="font-bold text-lg">
+                      {table.occupied_seats}/{table.capacity}
+                    </div>
+                    <div className={`text-sm ${
+                      table.available_seats === 0 ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {table.available_seats === 0
+                        ? 'Complète'
+                        : `${table.available_seats} libre${table.available_seats > 1 ? 's' : ''}`
+                      }
+                    </div>
                   </div>
-                  <div className={`text-sm ${
-                    table.available_seats === 0 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {table.available_seats === 0
-                      ? 'Complète'
-                      : `${table.available_seats} libre${table.available_seats > 1 ? 's' : ''}`
-                    }
-                  </div>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transform transition-transform ${
+                      expandedTables.has(table.table_number) ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
-              </div>
+              </button>
 
-              {/* Liste des invités */}
-              {table.seated_guests && table.seated_guests.length > 0 && (
-                <div className="p-2 space-y-1">
-                  {table.seated_guests.map((guest: any) => (
-                    <div
-                      key={guest.guest_id}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                    >
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="text-sm font-medium">
-                          {guest.guest_name}
-                        </span>
-                        {guest.checked_in && (
-                          <span className="text-green-600 text-xs">✓</span>
-                        )}
-                      </div>
-                      {!guest.checked_in && (
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => {
-                              const guestObj = guests.find(g => g.id === guest.guest_id)
-                              if (guestObj) setMovingGuest(guestObj)
-                            }}
-                            className="p-1 text-blue-600"
-                            title="Déplacer"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleRemoveFromTable(guest.guest_id)}
-                            className="p-1 text-red-600"
-                            title="Retirer"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+              {/* Liste des invités (expandable) */}
+              {expandedTables.has(table.table_number) && (
+                <>
+                  {table.seated_guests && table.seated_guests.length > 0 ? (
+                    <div className="p-2 space-y-1 border-t">
+                      {table.seated_guests.map((guest: any) => (
+                        <div
+                          key={guest.guest_id}
+                          className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-sm font-medium">
+                              {guest.guest_name}
+                            </span>
+                            {guest.checked_in && (
+                              <span className="text-green-600 text-xs">✓ Présent</span>
+                            )}
+                          </div>
+                          {!guest.checked_in && (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => {
+                                  const guestObj = guests.find(g => g.id === guest.guest_id)
+                                  if (guestObj) setMovingGuest(guestObj)
+                                }}
+                                className="p-1 text-blue-600"
+                                title="Déplacer"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleRemoveFromTable(guest.guest_id)}
+                                className="p-1 text-red-600"
+                                title="Retirer"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
                         </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-gray-500 text-sm border-t">
+                      Aucun invité assigné
+                    </div>
+                  )}
+
+                  {/* Bouton d'ajout si places disponibles ou mode déplacement */}
+                  {(table.available_seats > 0 || movingGuest) && (
+                    <div className="p-2 border-t">
+                      {movingGuest ? (
+                        <button
+                          onClick={() => handleMoveGuest(movingGuest, table.table_number)}
+                          disabled={table.available_seats === 0 && movingGuest.table_number !== table.table_number}
+                          className={`w-full py-2 rounded font-medium transition-colors ${
+                            table.available_seats === 0 && movingGuest.table_number !== table.table_number
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-purple-600 text-white active:bg-purple-700'
+                          }`}
+                        >
+                          {movingGuest.table_number === table.table_number
+                            ? 'Garder ici'
+                            : `Déplacer ici (${table.available_seats} place${table.available_seats > 1 ? 's' : ''})`
+                          }
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setViewMode('guests')
+                          }}
+                          className="w-full py-2 text-purple-600 font-medium"
+                        >
+                          + Ajouter un invité
+                        </button>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Bouton d'ajout si places disponibles ou mode déplacement */}
-              {(table.available_seats > 0 || movingGuest) && (
-                <div className="p-2 border-t">
-                  {movingGuest ? (
-                    <button
-                      onClick={() => handleMoveGuest(movingGuest, table.table_number)}
-                      disabled={table.available_seats === 0 && movingGuest.table_number !== table.table_number}
-                      className={`w-full py-2 rounded font-medium transition-colors ${
-                        table.available_seats === 0 && movingGuest.table_number !== table.table_number
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-purple-600 text-white active:bg-purple-700'
-                      }`}
-                    >
-                      {movingGuest.table_number === table.table_number
-                        ? 'Garder ici'
-                        : `Déplacer ici (${table.available_seats} place${table.available_seats > 1 ? 's' : ''})`
-                      }
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setViewMode('guests')
-                        // Pré-sélectionner cette table pour assignation
-                      }}
-                      className="w-full py-2 text-purple-600 font-medium"
-                    >
-                      + Ajouter un invité
-                    </button>
                   )}
-                </div>
+                </>
               )}
             </div>
           ))}
@@ -394,7 +425,7 @@ export default function SeatingMobileV2Page() {
 
           {filteredGuests.filter(g => !g.is_assigned).length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              Tous les invités sont assignés
+              {searchTerm ? 'Aucun invité trouvé' : 'Tous les invités sont assignés'}
             </div>
           )}
         </div>

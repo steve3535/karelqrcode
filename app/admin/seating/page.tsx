@@ -299,7 +299,7 @@ function SeatingManagement() {
     const checkMobile = () => {
       const isMobile = window.innerWidth <= 768
       if (isMobile) {
-        router.push('/admin/seating-mobile')
+        router.push('/admin/seating-mobile-v2')
       }
     }
     
