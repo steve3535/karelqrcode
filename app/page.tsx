@@ -48,7 +48,7 @@ export default function Home() {
       const { data: tables } = await supabase
         .from('tables')
         .select('capacity')
-        .lte('table_number', 26)  // Table 27 est pour les enfants, pas comptée
+        .lte('table_number', 26)  // Tables 1-26 pour les adultes (Table 27 MYOSOTIS est pour les enfants)
 
       const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 260
       
