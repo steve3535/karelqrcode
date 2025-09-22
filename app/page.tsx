@@ -242,7 +242,7 @@ export default function Home() {
               <p className="text-gray-600">Invités</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-pink-600">26</p>
+              <p className="text-3xl font-bold text-pink-600">27</p>
               <p className="text-gray-600">Tables</p>
             </div>
             <div>
