@@ -337,7 +337,7 @@ export default function SeatingMobileV2Page() {
           </div>
           <div className="text-center">
             <div className="font-bold text-green-600">
-              {tables.filter(t => t.table_number <= 26).reduce((acc, t) => acc + t.available_seats, 0)}
+              {tables.filter(t => t.table_number !== 27).reduce((acc, t) => acc + t.available_seats, 0)}
             </div>
             <div className="text-gray-500">Places libres</div>
           </div>

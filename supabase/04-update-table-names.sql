@@ -140,7 +140,7 @@ SET table_name = 'PENSÉE'
 WHERE table_number = 26;
 
 -- ====================================================
--- 2. AJOUT DE LA TABLE 27 (SI ELLE N'EXISTE PAS)
+-- 2. AJOUT DES TABLES 27 ET 28 (SI ELLES N'EXISTENT PAS)
 -- ====================================================
 
 -- Ajouter la table 27: MYOSOTIS (table des enfants)
@@ -150,6 +150,15 @@ ON CONFLICT (table_number)
 DO UPDATE SET
   table_name = 'MYOSOTIS',
   capacity = 15,
+  is_vip = false;
+
+-- Ajouter la table 28: IRIS BLANCHE (table adulte)
+INSERT INTO tables (table_number, table_name, capacity, is_vip, color_code, color_name)
+VALUES (28, 'IRIS BLANCHE', 10, false, '#E6E6FA', 'Lavande pâle')
+ON CONFLICT (table_number)
+DO UPDATE SET
+  table_name = 'IRIS BLANCHE',
+  capacity = 10,
   is_vip = false;
 
 -- ====================================================

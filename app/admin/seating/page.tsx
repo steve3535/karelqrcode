@@ -620,11 +620,11 @@ function SeatingManagement() {
           </div>
           <div className="bg-white px-4 py-2 rounded-lg shadow">
             <span className="text-gray-600">Places occupées: </span>
-            <span className="font-bold">{tables.filter(t => t.table_number <= 26).reduce((acc, t) => acc + t.occupied_seats, 0)}</span>
+            <span className="font-bold">{tables.filter(t => t.table_number !== 27).reduce((acc, t) => acc + t.occupied_seats, 0)}</span>
           </div>
           <div className="bg-white px-4 py-2 rounded-lg shadow">
             <span className="text-gray-600">Places libres: </span>
-            <span className="font-bold text-green-600">{tables.filter(t => t.table_number <= 26).reduce((acc, t) => acc + t.available_seats, 0)}</span>
+            <span className="font-bold text-green-600">{tables.filter(t => t.table_number !== 27).reduce((acc, t) => acc + t.available_seats, 0)}</span>
           </div>
         </div>
       </div>

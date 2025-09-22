@@ -44,11 +44,11 @@ export default function Home() {
         .select('*', { count: 'exact', head: true })
         .eq('checked_in', true)
 
-      // Récupérer la capacité totale RÉELLE depuis la base de données (26 tables adultes)
+      // Récupérer la capacité totale RÉELLE depuis la base de données (tables adultes: 1-26 + 28)
       const { data: tables } = await supabase
         .from('tables')
         .select('capacity')
-        .lte('table_number', 26)  // Tables 1-26 pour les adultes (Table 27 MYOSOTIS est pour les enfants)
+        .neq('table_number', 27)  // Exclure uniquement la table 27 (MYOSOTIS - enfants)
 
       const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 260
       

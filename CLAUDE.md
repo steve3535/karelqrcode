@@ -37,11 +37,13 @@ Main tables:
   - Supports plus_ones and dietary restrictions
   - QR code format: `WEDDING-${guestId}-${timestamp}`
 
-- **tables**: 26 pre-populated tables
-  - Table 1: VIP/head table with 8 seats
-  - Tables 2-25: Standard tables with 10 seats each
-  - Table 26: Children's table with 15 seats
-  - Color-coded with hex values and readable names
+- **tables**: 28 tables total
+  - Table 1: ORCHIDÉE - VIP/head table with 8 seats
+  - Tables 2-25: Various flower names - 10 seats each
+  - Table 26: PENSÉE - 15 seats
+  - Table 27: MYOSOTIS - Children's table with 15 seats
+  - Table 28: IRIS BLANCHE - 10 seats
+  - All color-coded with hex values and readable names
 
 - **seating_assignments**: Links guests to specific table/seat
   - Enforces unique constraint on (table_id, seat_number)
@@ -60,7 +62,7 @@ Views:
 - `unassigned_guests` - Guests without seat assignments
 
 Key Functions:
-- `auto_assign_guest()` - Automatic seat assignment (iterates tables 1-26)
+- `auto_assign_guest()` - Automatic seat assignment (iterates tables 1-26 and 28, skips 27)
 - `assign_guest_to_seat()` - Manual seat assignment with validation
 - `check_in_guest_by_qr()` - QR code-based check-in
 - `move_guest_to_seat()` - Move guest between seats
