@@ -68,7 +68,7 @@ export default function ScannerV2() {
       const { count: assignedCount } = await supabase
         .from('seating_assignments')
         .select('*', { count: 'exact', head: true })
-        .lte('table_id', 26)  // Ne compter que les tables adultes
+        .neq('table_id', 27)  // Exclure uniquement la table 27 (enfants)
 
       const { count: checkedInCount } = await supabase
         .from('guests')
@@ -85,7 +85,7 @@ export default function ScannerV2() {
         .select('capacity')
         .neq('table_number', 27)  // Exclure uniquement la table 27 (MYOSOTIS - enfants)
 
-      const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 260
+      const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 278
 
       setStats({
         availableSeats: totalCapacity - (assignedCount || 0),
