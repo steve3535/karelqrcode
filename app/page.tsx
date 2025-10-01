@@ -32,30 +32,25 @@ export default function Home() {
         .from('guests')
         .select('*', { count: 'exact', head: true })
 
-      // Compter les places assignées (tables adultes uniquement)
-      const { count: assignedCount } = await supabase
-        .from('seating_assignments')
-        .select('*', { count: 'exact', head: true })
-        .neq('table_id', 27)  // Exclure uniquement la table 27 (enfants)
-
       // Compter les invités présents
       const { count: checkedInCount } = await supabase
         .from('guests')
         .select('*', { count: 'exact', head: true })
         .eq('checked_in', true)
 
-      // Récupérer la capacité totale RÉELLE depuis la base de données (tables adultes: 1-26 + 28)
-      const { data: tables } = await supabase
-        .from('tables')
-        .select('capacity')
-        .neq('table_number', 27)  // Exclure uniquement la table 27 (MYOSOTIS - enfants)
+      // Utiliser la vue table_status pour avoir les vrais chiffres (comme page gestion)
+      const { data: tableStatus } = await supabase
+        .from('table_status')
+        .select('occupied_seats, available_seats')
+        .neq('table_number', 27)  // Exclure la table enfants
 
-      const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 278
-      
+      const occupiedSeats = tableStatus?.reduce((sum, table) => sum + table.occupied_seats, 0) || 0
+      const availableSeats = tableStatus?.reduce((sum, table) => sum + table.available_seats, 0) || 0
+
       setStats({
         totalGuests: guestCount || 0,
-        assignedSeats: assignedCount || 0,
-        availableSeats: totalCapacity - (assignedCount || 0),
+        assignedSeats: occupiedSeats,
+        availableSeats: availableSeats,
         checkedIn: checkedInCount || 0
       })
     } catch (error) {

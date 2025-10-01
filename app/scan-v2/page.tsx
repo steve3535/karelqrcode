@@ -65,11 +65,6 @@ export default function ScannerV2() {
 
   const loadStats = async () => {
     try {
-      const { count: assignedCount } = await supabase
-        .from('seating_assignments')
-        .select('*', { count: 'exact', head: true })
-        .neq('table_id', 27)  // Exclure uniquement la table 27 (enfants)
-
       const { count: checkedInCount } = await supabase
         .from('guests')
         .select('*', { count: 'exact', head: true })
@@ -79,16 +74,16 @@ export default function ScannerV2() {
         .from('guests')
         .select('*', { count: 'exact', head: true })
 
-      // Récupérer la capacité totale RÉELLE depuis la base de données (tables adultes: 1-26 + 28)
-      const { data: tables } = await supabase
-        .from('tables')
-        .select('capacity')
-        .neq('table_number', 27)  // Exclure uniquement la table 27 (MYOSOTIS - enfants)
+      // Utiliser la vue table_status pour avoir les vrais chiffres (comme page gestion)
+      const { data: tableStatus } = await supabase
+        .from('table_status')
+        .select('available_seats')
+        .neq('table_number', 27)  // Exclure la table enfants
 
-      const totalCapacity = tables?.reduce((sum, table) => sum + table.capacity, 0) || 278
+      const availableSeats = tableStatus?.reduce((sum, table) => sum + table.available_seats, 0) || 0
 
       setStats({
-        availableSeats: totalCapacity - (assignedCount || 0),
+        availableSeats: availableSeats,
         checkedIn: checkedInCount || 0,
         totalGuests: guestCount || 0
       })
