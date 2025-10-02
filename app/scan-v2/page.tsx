@@ -284,6 +284,8 @@ export default function ScannerV2() {
       } else {
         // Faire le check-in
         console.log('Tentative de check-in pour id:', data.id)
+
+        // Mettre à jour guests.checked_in
         const { error: updateError } = await supabase
           .from('guests')
           .update({
@@ -292,8 +294,17 @@ export default function ScannerV2() {
           })
           .eq('id', data.id) // id est déjà un UUID
 
-        if (updateError) {
-          console.error('Erreur check-in:', updateError)
+        // Mettre à jour seating_assignments.checked_in aussi
+        const { error: assignmentError } = await supabase
+          .from('seating_assignments')
+          .update({
+            checked_in: true,
+            checked_in_at: new Date().toISOString()
+          })
+          .eq('guest_id', data.id)
+
+        if (updateError || assignmentError) {
+          console.error('Erreur check-in:', updateError || assignmentError)
           setMessage('❌ Erreur lors du check-in')
         } else {
           setMessage('✅ Check-in réussi!')
@@ -325,7 +336,8 @@ export default function ScannerV2() {
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
+      // Annuler dans guests
+      const { error: guestError } = await supabase
         .from('guests')
         .update({
           checked_in: false,
@@ -333,8 +345,17 @@ export default function ScannerV2() {
         })
         .eq('id', guestInfo.id)
 
-      if (error) {
-        console.error('Erreur checkout:', error)
+      // Annuler dans seating_assignments aussi
+      const { error: assignmentError } = await supabase
+        .from('seating_assignments')
+        .update({
+          checked_in: false,
+          checked_in_at: null
+        })
+        .eq('guest_id', guestInfo.id)
+
+      if (guestError || assignmentError) {
+        console.error('Erreur checkout:', guestError || assignmentError)
         setMessage('❌ Erreur lors de l\'annulation du check-in')
       } else {
         setMessage('✅ Check-in annulé avec succès')
