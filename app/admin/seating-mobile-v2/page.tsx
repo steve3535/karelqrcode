@@ -77,6 +77,10 @@ export default function SeatingMobileV2Page() {
   const handleMoveGuest = async (guest: Guest, targetTableId: number) => {
     setLoading(true)
     try {
+      // Trouver la table cible pour connaître sa capacité
+      const targetTable = tables.find(t => t.table_number === targetTableId)
+      const tableCapacity = targetTable?.capacity || 10
+
       // Supprimer l'ancienne assignation
       await supabase
         .from('seating_assignments')
@@ -91,7 +95,7 @@ export default function SeatingMobileV2Page() {
 
       const occupiedSeats = existingSeats?.map(s => s.seat_number) || []
       let nextSeat = 1
-      while (occupiedSeats.includes(nextSeat) && nextSeat <= 10) {
+      while (occupiedSeats.includes(nextSeat) && nextSeat <= tableCapacity) {
         nextSeat++
       }
 
@@ -151,6 +155,10 @@ export default function SeatingMobileV2Page() {
 
       // Si une table est sélectionnée, assigner directement
       if (newGuest.table_id) {
+        // Trouver la table pour connaître sa capacité
+        const targetTable = tables.find(t => t.table_number === newGuest.table_id)
+        const tableCapacity = targetTable?.capacity || 10
+
         // Trouver le prochain siège disponible
         const { data: existingSeats } = await supabase
           .from('seating_assignments')
@@ -159,7 +167,7 @@ export default function SeatingMobileV2Page() {
 
         const occupiedSeats = existingSeats?.map(s => s.seat_number) || []
         let nextSeat = 1
-        while (occupiedSeats.includes(nextSeat) && nextSeat <= 10) {
+        while (occupiedSeats.includes(nextSeat) && nextSeat <= tableCapacity) {
           nextSeat++
         }
 
