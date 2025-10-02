@@ -24,6 +24,7 @@ type Table = {
   color_name: string
   occupied_seats: number
   available_seats: number
+  is_vip: boolean
   seated_guests: any[]
 }
 
