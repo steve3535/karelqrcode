@@ -80,9 +80,9 @@ INSERT INTO access_codes (code)
 VALUES ('KRL2025')
 ON CONFLICT (code) DO NOTHING;
 
--- Tables avec couleurs et noms de fleurs (28 tables)
+-- Tables avec couleurs et noms de fleurs (29 tables)
 INSERT INTO tables (table_number, table_name, capacity, is_vip, color_code, color_name) VALUES
-(1, 'ORCHIDÉE', 8, true, '#FFD700', 'Or'),
+(1, 'ORCHIDÉE', 10, true, '#FFD700', 'Or'),
 (2, 'LYS BLANC', 10, false, '#FF6B6B', 'Rouge'),
 (3, 'IRIS', 10, false, '#4ECDC4', 'Turquoise'),
 (4, 'LYS DORÉ', 10, false, '#45B7D1', 'Bleu'),
@@ -109,7 +109,8 @@ INSERT INTO tables (table_number, table_name, capacity, is_vip, color_code, colo
 (25, 'ANTHURIUM', 10, false, '#A8DADC', 'Cyan'),
 (26, 'PENSÉE', 15, false, '#B19CD9', 'Violet'),
 (27, 'MYOSOTIS', 30, false, '#87CEEB', 'Bleu ciel'),
-(28, 'IRIS BLANCHE', 10, false, '#E6E6FA', 'Lavande pâle')
+(28, 'IRIS BLANCHE', 10, false, '#E6E6FA', 'Lavande pâle'),
+(29, 'LAVANDE', 10, false, '#9B7EBD', 'Mauve')
 ON CONFLICT (table_number) DO UPDATE
 SET
   table_name = EXCLUDED.table_name,

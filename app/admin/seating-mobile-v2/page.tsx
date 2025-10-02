@@ -431,6 +431,15 @@ export default function SeatingMobileV2Page() {
                     {table.table_number <= 3 && <span className="text-yellow-500">⭐</span>}
                   </div>
                   <div className="text-sm text-gray-600">{table.table_name}</div>
+                  {/* Indicateur de présence */}
+                  {table.seated_guests && table.seated_guests.length > 0 && (() => {
+                    const checkedInCount = table.seated_guests.filter((g: any) => g.checked_in).length
+                    return checkedInCount > 0 ? (
+                      <div className="text-xs text-green-600 font-semibold mt-1">
+                        ✓ {checkedInCount} présent{checkedInCount > 1 ? 's' : ''}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">

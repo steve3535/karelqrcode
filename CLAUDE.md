@@ -37,12 +37,12 @@ Main tables:
   - Supports plus_ones and dietary restrictions
   - QR code format: `WEDDING-${guestId}-${timestamp}`
 
-- **tables**: 28 tables total
-  - Table 1: ORCHIDÉE - VIP/head table with 8 seats
-  - Tables 2-25: Various flower names - 10 seats each
-  - Table 26: PENSÉE - 15 seats
-  - Table 27: MYOSOTIS - Children's table with 15 seats
+- **tables**: 29 tables total
+  - Table 1: ORCHIDÉE - VIP/head table with 10 seats
+  - Tables 2-26: Various flower names - 10-15 seats each (Table 26: PENSÉE has 15 seats)
+  - Table 27: MYOSOTIS - Children's table with 30 seats
   - Table 28: IRIS BLANCHE - 10 seats
+  - Table 29: LAVANDE - 10 seats
   - All color-coded with hex values and readable names
 
 - **seating_assignments**: Links guests to specific table/seat
@@ -71,7 +71,7 @@ Key Functions:
 
 1. **RSVP Flow**: Guest enters access code → Updates RSVP status → Auto-assigns next available seat → Generates unique QR code
 2. **Check-in Flow**: Hostess scans QR → Displays guest info and table/seat → Marks as checked in with timestamp
-3. **Seat Assignment**: Automatic assignment iterates through tables 1-26, seats 1-10
+3. **Seat Assignment**: Automatic assignment iterates through adult tables 1-26, 28-29 (skips table 27 - children), using each table's actual capacity
 4. **Table Management**: Visual seat map showing occupied/available seats with guest details
 5. **Mobile Detection**: Routes to mobile interface when `window.innerWidth <= 768`
 

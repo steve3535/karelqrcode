@@ -58,20 +58,32 @@ RETURNS TABLE(table_number INTEGER, seat_number INTEGER) AS $$
 DECLARE
     v_table_number INTEGER;
     v_seat_number INTEGER;
+    v_table_capacity INTEGER;
 BEGIN
-    -- Trouver la première place disponible
-    FOR v_table_number IN 1..26 LOOP
-        FOR v_seat_number IN 1..10 LOOP
+    -- Trouver la première place disponible (tables adultes: 1-26, 28-29)
+    -- Exclure la table 27 (MYOSOTIS - table enfants)
+    FOR v_table_number IN 1..29 LOOP
+        -- Sauter la table 27 (enfants)
+        IF v_table_number = 27 THEN
+            CONTINUE;
+        END IF;
+
+        -- Récupérer la capacité de cette table
+        SELECT capacity INTO v_table_capacity
+        FROM tables
+        WHERE table_number = v_table_number;
+
+        -- Parcourir les sièges selon la capacité réelle de la table
+        FOR v_seat_number IN 1..COALESCE(v_table_capacity, 10) LOOP
             -- Vérifier si la place est libre
             IF NOT EXISTS (
                 SELECT 1 FROM seating_assignments
                 WHERE table_id = v_table_number AND seat_number = v_seat_number
             ) THEN
-                -- Vérifier que la table existe et a la capacité
+                -- Vérifier que la table existe
                 IF EXISTS (
                     SELECT 1 FROM tables t
                     WHERE t.table_number = v_table_number
-                    AND v_seat_number <= t.capacity
                 ) THEN
                     -- Assigner la place
                     INSERT INTO seating_assignments (guest_id, table_id, seat_number)

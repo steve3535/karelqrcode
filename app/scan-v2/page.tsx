@@ -29,6 +29,8 @@ type TableAvailability = {
   color_code: string
   color_name: string
   available_seats: number
+  occupied_seats: number
+  capacity: number
   is_vip: boolean
 }
 
@@ -96,8 +98,8 @@ export default function ScannerV2() {
     try {
       const { data: tables } = await supabase
         .from('table_status')
-        .select('table_number, table_name, color_code, color_name, available_seats, is_vip')
-        .gt('available_seats', 0)
+        .select('table_number, table_name, color_code, color_name, available_seats, occupied_seats, capacity, is_vip')
+        .neq('table_number', 27)  // Exclure la table enfants
         .order('table_number')
 
       setTableAvailability(tables || [])
@@ -382,11 +384,11 @@ export default function ScannerV2() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
-              Places disponibles par table
+              Taux de remplissage
             </span>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">
-                {tableAvailability.length} tables libres
+                {tableAvailability.length} tables
               </span>
               <svg 
                 className={`w-5 h-5 text-gray-400 transform transition-transform ${showTableDetails ? 'rotate-180' : ''}`} 
@@ -399,44 +401,56 @@ export default function ScannerV2() {
             </div>
           </button>
           
-          {/* Liste des tables avec places disponibles */}
+          {/* Grille des tables avec taux de remplissage */}
           {showTableDetails && (
             <div className="px-4 pb-4 border-t border-gray-100">
               {tableAvailability.length > 0 ? (
                 <div className="space-y-2 mt-3">
-                  {tableAvailability.map((table) => (
-                    <div 
-                      key={table.table_number}
-                      className="flex items-center justify-between p-3 rounded-lg border"
-                      style={{ 
-                        borderColor: table.color_code,
-                        backgroundColor: `${table.color_code}10`
-                      }}
-                    >
-                      <div className="flex items-center gap-2 flex-1">
-                        <span 
-                          className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: table.color_code }}
-                        />
-                        <span className="font-medium text-sm flex-1">
-                          {table.table_name || `Table ${table.table_number}`}
-                          {table.is_vip && <span className="ml-2 text-yellow-500">⭐</span>}
-                        </span>
+                  {tableAvailability.map((table) => {
+                    const fillPercentage = (table.occupied_seats / table.capacity) * 100
+                    return (
+                      <div
+                        key={table.table_number}
+                        className="p-3 rounded-lg border"
+                        style={{
+                          borderColor: table.color_code,
+                          backgroundColor: `${table.color_code}10`
+                        }}
+                      >
+                        {/* En-tête de la table */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 flex-1">
+                            <span
+                              className="w-4 h-4 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: table.color_code }}
+                            />
+                            <span className="font-medium text-sm">
+                              {table.table_name}
+                              {table.is_vip && <span className="ml-2 text-yellow-500">⭐</span>}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-500 font-semibold">
+                            {table.occupied_seats}/{table.capacity}
+                          </span>
+                        </div>
+
+                        {/* Barre de progression */}
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${fillPercentage}%`,
+                              backgroundColor: fillPercentage === 100 ? '#EF4444' : fillPercentage >= 80 ? '#F59E0B' : table.color_code
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-green-600">
-                          {table.available_seats}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          place{table.available_seats > 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-center text-gray-500 py-4 text-sm">
-                  Toutes les tables sont complètes
+                  Aucune table à afficher
                 </p>
               )}
             </div>
@@ -533,19 +547,21 @@ export default function ScannerV2() {
                 {/* Informations de table avec grande visibilité */}
                 <div className="bg-gray-50 rounded-xl p-6 mb-4">
                   <div className="text-center mb-4">
-                    <div 
+                    <div
                       className="inline-block px-6 py-3 rounded-full text-white text-2xl font-bold shadow-lg"
                       style={{ backgroundColor: guestInfo.color_code }}
                     >
-                      Table {guestInfo.table_number}
+                      {guestInfo.table_name}
                     </div>
+                    {/* Numéro de table en plus petit dessous */}
+                    <p className="text-gray-500 text-sm mt-2">Table {guestInfo.table_number}</p>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
                       <p className="text-gray-500 text-sm">Couleur</p>
                       <p className="font-semibold flex items-center justify-center">
-                        <span 
+                        <span
                           className="w-4 h-4 rounded-full mr-2"
                           style={{ backgroundColor: guestInfo.color_code }}
                         ></span>
@@ -557,12 +573,6 @@ export default function ScannerV2() {
                       <p className="text-2xl font-bold">{guestInfo.seat_number || '-'}</p>
                     </div>
                   </div>
-                  
-                  {guestInfo.table_name && (
-                    <p className="text-center mt-3 text-gray-600 italic">
-                      {guestInfo.table_name}
-                    </p>
-                  )}
                 </div>
 
                 {/* Statut de check-in */}
