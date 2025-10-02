@@ -31,6 +31,7 @@ type TableAvailability = {
   available_seats: number
   occupied_seats: number
   capacity: number
+  checked_in_count: number
   is_vip: boolean
 }
 
@@ -102,7 +103,23 @@ export default function ScannerV2() {
         .neq('table_number', 27)  // Exclure la table enfants
         .order('table_number')
 
-      setTableAvailability(tables || [])
+      // Pour chaque table, compter les invités checked-in
+      const tablesWithCheckedIn = await Promise.all(
+        (tables || []).map(async (table) => {
+          const { count } = await supabase
+            .from('seating_assignments')
+            .select('*', { count: 'exact', head: true })
+            .eq('table_id', table.table_number)
+            .eq('checked_in', true)
+
+          return {
+            ...table,
+            checked_in_count: count || 0
+          }
+        })
+      )
+
+      setTableAvailability(tablesWithCheckedIn)
     } catch (error) {
       console.error('Error loading table availability:', error)
     }
@@ -401,13 +418,13 @@ export default function ScannerV2() {
             </div>
           </button>
           
-          {/* Grille des tables avec taux de remplissage */}
+          {/* Grille des tables avec taux de remplissage (check-in) */}
           {showTableDetails && (
             <div className="px-4 pb-4 border-t border-gray-100">
               {tableAvailability.length > 0 ? (
-                <div className="space-y-2 mt-3">
+                <div className="space-y-3 mt-3">
                   {tableAvailability.map((table) => {
-                    const fillPercentage = (table.occupied_seats / table.capacity) * 100
+                    const checkinPercentage = (table.checked_in_count / table.capacity) * 100
                     return (
                       <div
                         key={table.table_number}
@@ -429,21 +446,35 @@ export default function ScannerV2() {
                               {table.is_vip && <span className="ml-2 text-yellow-500">⭐</span>}
                             </span>
                           </div>
-                          <span className="text-xs text-gray-500 font-semibold">
-                            {table.occupied_seats}/{table.capacity}
-                          </span>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-600 font-semibold">
+                              ✓ {table.checked_in_count}/{table.capacity} ({Math.round(checkinPercentage)}%)
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Barre de progression */}
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        {/* Barre de progression (taux check-in) */}
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
                           <div
                             className="h-2 rounded-full transition-all duration-300"
                             style={{
-                              width: `${fillPercentage}%`,
-                              backgroundColor: fillPercentage === 100 ? '#EF4444' : fillPercentage >= 80 ? '#F59E0B' : table.color_code
+                              width: `${checkinPercentage}%`,
+                              backgroundColor: checkinPercentage === 100 ? '#10B981' : checkinPercentage >= 80 ? '#F59E0B' : table.color_code
                             }}
                           />
                         </div>
+
+                        {/* Info places disponibles (non assignées) */}
+                        {table.available_seats > 0 && (
+                          <div className="text-xs text-green-600 font-medium">
+                            📍 {table.available_seats} place{table.available_seats > 1 ? 's' : ''} libre{table.available_seats > 1 ? 's' : ''}
+                          </div>
+                        )}
+                        {table.available_seats === 0 && (
+                          <div className="text-xs text-red-600 font-medium">
+                            🔴 Table complète (assignation)
+                          </div>
+                        )}
                       </div>
                     )
                   })}
