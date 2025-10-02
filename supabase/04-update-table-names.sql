@@ -145,11 +145,11 @@ WHERE table_number = 26;
 
 -- Ajouter la table 27: MYOSOTIS (table des enfants)
 INSERT INTO tables (table_number, table_name, capacity, is_vip, color_code, color_name)
-VALUES (27, 'MYOSOTIS', 15, false, '#87CEEB', 'Bleu ciel')
+VALUES (27, 'MYOSOTIS', 30, false, '#87CEEB', 'Bleu ciel')
 ON CONFLICT (table_number)
 DO UPDATE SET
   table_name = 'MYOSOTIS',
-  capacity = 15,
+  capacity = 30,
   is_vip = false;
 
 -- Ajouter la table 28: IRIS BLANCHE (table adulte)

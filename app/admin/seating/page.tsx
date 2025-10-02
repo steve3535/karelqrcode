@@ -199,7 +199,7 @@ function DroppableTable({ table, onDrop, onRemoveGuest }: {
     accept: 'guest',
     drop: (item: Guest) => {
       if (!isFull) {
-        onDrop(item, table.id)
+        onDrop(item, table.table_number)  // Utiliser table_number au lieu de id
       }
     },
     canDrop: () => !isFull,
@@ -373,7 +373,7 @@ function SeatingManagement() {
       }
       
       // Vérifier d'abord si la table a de la place
-      const targetTable = tables.find(t => t.id === tableId)
+      const targetTable = tables.find(t => t.table_number === tableId)
       if (targetTable && targetTable.available_seats === 0) {
         setMessage('❌ Table pleine ! Plus de places disponibles sur cette table.')
         return
@@ -397,15 +397,16 @@ function SeatingManagement() {
         .order('seat_number')
 
       const usedSeats = existingSeats?.map(s => s.seat_number) || []
-      
-      // Vérifier qu'il y a vraiment une place libre
-      if (usedSeats.length >= 10) {
-        setMessage('❌ Table pleine ! Cette table a déjà 10 invités.')
+
+      // Vérifier qu'il y a vraiment une place libre (utiliser la capacité réelle de la table)
+      const tableCapacity = targetTable?.capacity || 10
+      if (usedSeats.length >= tableCapacity) {
+        setMessage(`❌ Table pleine ! Cette table a déjà ${tableCapacity} invités.`)
         return
       }
 
       let nextSeat = 1
-      for (let i = 1; i <= 10; i++) {
+      for (let i = 1; i <= tableCapacity; i++) {
         if (!usedSeats.includes(i)) {
           nextSeat = i
           break

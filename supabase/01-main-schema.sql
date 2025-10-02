@@ -108,7 +108,7 @@ INSERT INTO tables (table_number, table_name, capacity, is_vip, color_code, colo
 (24, 'ALLÉLUIA (Oxalis)', 10, false, '#FF99C8', 'Rose bonbon'),
 (25, 'ANTHURIUM', 10, false, '#A8DADC', 'Cyan'),
 (26, 'PENSÉE', 15, false, '#B19CD9', 'Violet'),
-(27, 'MYOSOTIS', 15, false, '#87CEEB', 'Bleu ciel'),
+(27, 'MYOSOTIS', 30, false, '#87CEEB', 'Bleu ciel'),
 (28, 'IRIS BLANCHE', 10, false, '#E6E6FA', 'Lavande pâle')
 ON CONFLICT (table_number) DO UPDATE
 SET
